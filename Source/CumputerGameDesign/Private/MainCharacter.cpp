@@ -79,6 +79,8 @@ void AMainCharacter::BeginPlay()
 			Subsystem->AddMappingContext(Imc_Player, 0);
 		}
 	}
+	
+	Hp = MaxHp;
 }
 
 // Called every frame

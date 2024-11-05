@@ -10,13 +10,12 @@ void UBoss1Anim::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (const ABoss1* Boss = Cast<ABoss1>(TryGetPawnOwner()))
 	{
-		const FVector Velocity = Boss->GetVelocity();
-		const FVector ForwardVector = Boss->GetActorForwardVector();
-		Speed = FVector::DotProduct(Velocity, ForwardVector);
 		IsFalling = Boss->State == EBossState::Jumping;
 		IsGroggy = Boss->State == EBossState::Groggy;
 		IsRushTracing = Boss->State == EBossState::RushTracing;
+		IsRushing = Boss->State == EBossState::Rushing;
 		IsAttack = Boss->State == EBossState::Attack;
+		IsAttackMoving = Boss->State == EBossState::AttackMoving;
 		if (IsAttack)
 			AttackIndex = FMath::RandRange(0, AttackMaxIndex);
 	}
@@ -24,7 +23,7 @@ void UBoss1Anim::NativeUpdateAnimation(float DeltaSeconds)
 
 bool UBoss1Anim::IsJogFwd() const
 {
-	return Speed > 0.1f;
+	return IsRushing || IsAttackMoving;
 }
 
 bool UBoss1Anim::AttackIndexEqualWith(const int32 Index) const

@@ -13,5 +13,20 @@ UCLASS()
 class CUMPUTERGAMEDESIGN_API AMainGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	AMainGameModeBase();
 	
+protected:
+	virtual void BeginPlay() override;
+	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Player)
+	class AMainCharacter* Player;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Boss)
+	class ABoss1* Boss;
+
+	UFUNCTION()
+	void SpawnBoss();
 };

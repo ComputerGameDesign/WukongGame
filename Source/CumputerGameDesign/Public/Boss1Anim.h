@@ -19,12 +19,6 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Speed = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Direction = 0;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsFalling = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -34,7 +28,13 @@ public:
 	bool IsRushTracing = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsRushing = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsAttack = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsAttackMoving = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 AttackMaxIndex = 4;

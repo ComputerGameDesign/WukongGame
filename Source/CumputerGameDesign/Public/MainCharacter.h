@@ -59,7 +59,7 @@ public:
 	class UInputAction* Ia_Reload;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
-	float DashPower = 5000.0f;
+	float DashPower = 2500.0f;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	float DashCoolTime = 0.3f;
@@ -67,8 +67,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	bool IsDashing = false;
 
-	UPROPERTY(EditAnywhere, Category = GamePlay)
-	float Hp = 100.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= GamePlay)
+	float MaxHp = 100.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = GamePlay)
+	float Hp;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	float ShootDamage = 1.0f;
@@ -85,10 +88,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	bool IsShootAll = false;
 
-	UPROPERTY(EditAnywhere, Category = GamePlay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = GamePlay)
 	int32 MaxBulletCount = 4;
 
-	UPROPERTY(EditAnywhere, Category = GamePlay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = GamePlay)
 	int32 NowBulletCount = 4;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
@@ -98,7 +101,7 @@ public:
 	bool IsReloading = false;
 	
 	UPROPERTY(EditAnywhere, Category = GamePlay)
-	float Speed = 1000.0f;
+	float Speed = 500.0f;
 
 	UFUNCTION()
 	void TakeDamage(const float Damage);

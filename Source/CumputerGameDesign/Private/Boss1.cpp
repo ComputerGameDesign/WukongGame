@@ -38,6 +38,8 @@ void ABoss1::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SpawnDefaultController();
+
 	for (TActorIterator<AMainCharacter> It(GetWorld()); It; ++It)
 	{
 		TargetPlayer = *It;
@@ -45,6 +47,9 @@ void ABoss1::BeginPlay()
 	
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABoss1::OnBodyHit);
 	WeaponCollider->OnComponentBeginOverlap.AddDynamic(this, &ABoss1::OnWeaponBeginOverlap);
+
+	SetActorEnableCollision(true);
+	Hp = MaxHp;
 }
 
 // Called every frame
@@ -54,7 +59,7 @@ void ABoss1::Tick(float DeltaTime)
 
 	CheckState();
 	
-	DrawDebug();
+	//DrawDebug();
 }
 
 // Called to bind functionality to input
@@ -117,8 +122,13 @@ void ABoss1::SetCoolTime(bool &CanValue, const float CoolTime) const
 		false);
 }
 
-void ABoss1::TakeDamage(const float Damage)
+void ABoss1::TakeDamage(float Damage)
 {
+	if (State == EBossState::Groggy)
+		Damage *= 1.5f;
+
+	Shield = FMath::Max(Shield - Damage, 0.0f);
+	Damage = FMath::Max(Damage - Shield, 0.0f);
 	Hp = FMath::Max(Hp - Damage, 0.0f);
 }
 
@@ -133,6 +143,10 @@ void ABoss1::CheckState()
 	case EBossState::Jumping:
 		Jumping();
 		break;
+
+	case EBossState::Landing:
+		Landing();
+		break;
 		
 	case EBossState::RushTracing:
 		RushTracing();
@@ -145,6 +159,22 @@ void ABoss1::CheckState()
 	case EBossState::AttackMoving:
 		AttackMoving();
 		break;
+
+	case EBossState::Attack:
+		Attacking();
+		break;
+
+	case EBossState::PatternJumping:
+		PatternNeutralizeJumping();
+		break;
+
+	case EBossState::PatternLanding:
+		PatternNeutralizeLanding();
+		break;
+
+	case EBossState::Neutralized:
+		PatternNeutralize();
+		break;
 		
 	default:
 		break;
@@ -153,11 +183,12 @@ void ABoss1::CheckState()
 
 void ABoss1::IdleTransition()
 {
-	if (GetCharacterMovement()->IsFalling())
+	if (NowPatternNeutralizeCount < TotalPatternNeutralizeCount &&
+		Hp / MaxHp <= PatternNeutralizeHpPercents[NowPatternNeutralizeCount])
 	{
-		return;
+		StartPatternNeutralizeJumping();
 	}
-	if (CanRush)
+	else if (CanRush)
 	{
 		StartRushing();
 	}
@@ -178,7 +209,7 @@ void ABoss1::StartJumping()
 	
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
 	
-	FVector Direction = GetTargetDirectionWithoutZ();
+	const FVector Direction = GetTargetDirectionWithoutZ();
 	SetActorRotationSmooth(Direction.Rotation(), 20.0f);
 
 	JumpStartPosition = GetActorLocation();
@@ -189,7 +220,7 @@ void ABoss1::StartJumping()
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
 		TimerHandle,
-		[&, Direction]() -> void
+		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 0;
 			State = EBossState::Jumping;
@@ -200,11 +231,12 @@ void ABoss1::StartJumping()
 
 void ABoss1::Jumping()
 {
-	if (FMath::IsNearlyEqual(GetActorLocation().X, JumpTargetPosition.X, 0.1f) &&
-		FMath::IsNearlyEqual(GetActorLocation().Y, JumpTargetPosition.Y, 0.1f) &&
-		FMath::IsNearlyEqual(GetActorLocation().Z, JumpTargetPosition.Z, 0.1f))
+	constexpr float Delta = 0.1f;
+	if (FMath::IsNearlyEqual(GetActorLocation().X, JumpTargetPosition.X, Delta) &&
+		FMath::IsNearlyEqual(GetActorLocation().Y, JumpTargetPosition.Y, Delta) &&
+		FMath::IsNearlyEqual(GetActorLocation().Z, JumpTargetPosition.Z, Delta))
 	{
-		Landing();
+		StartLanding();
 	}
 	else
 	{
@@ -214,7 +246,7 @@ void ABoss1::Jumping()
 	}
 }
 
-void ABoss1::Landing()
+void ABoss1::StartLanding()
 {
 	State = EBossState::Casting;
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
@@ -225,10 +257,25 @@ void ABoss1::Landing()
 		{
 			GetCharacterMovement()->GravityScale = 1.0f;
 			LaunchCharacter(FVector(0, 0, -JumpLandingVelocity), true, true);
-			State = EBossState::Idle;
+			State = EBossState::Landing;
 		},
 		JumpLandingDelay,
 		false);
+}
+
+
+void ABoss1::Landing()
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		State = EBossState::Casting;
+		FTimerHandle TimerHandle;
+		GetWorldTimerManager().SetTimer(
+			TimerHandle,
+			[&]() -> void { AttackMeleeOnce(); },
+			LandingDelay,
+			false);
+	}
 }
 
 void ABoss1::StartRushing()
@@ -267,7 +314,7 @@ void ABoss1::StartGroggy()
 void ABoss1::StartAttack()
 {
 	SetCoolTime(CanAttack, AttackCoolTime);
-	SetActorRotationSmoothOnce(GetTargetDirectionWithoutZ().Rotation(),20.0f, GetWorld()->DeltaTimeSeconds);
+	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
 	
 	State = EBossState::Casting;
 
@@ -290,8 +337,9 @@ void ABoss1::StartAttack()
 
 void ABoss1::AttackMoving()
 {
-	if (FMath::IsNearlyEqual(GetActorLocation().X, AttackTargetPosition.X, 0.1f) &&
-		FMath::IsNearlyEqual(GetActorLocation().Y, AttackTargetPosition.Y, 0.1f))
+	constexpr float Delta = 0.1f;
+	if (FMath::IsNearlyEqual(GetActorLocation().X, AttackTargetPosition.X, Delta) &&
+		FMath::IsNearlyEqual(GetActorLocation().Y, AttackTargetPosition.Y, Delta))
 	{
 		State = EBossState::Casting;
 		FTimerHandle TimerHandle;
@@ -316,23 +364,8 @@ void ABoss1::AttackMoving()
 void ABoss1::AttackMeleeOnce()
 {
 	State = EBossState::Attack;
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			State = EBossState::Idle;
-		},
-		AttackDelay,
-		false);
-}
-
-
-void ABoss1::AttackHorizontal()
-{
-	FVector BoneLocation = GetMesh()->GetBoneLocation(FName("root_weapon_r"));
-	WeaponCollider->SetWorldLocation(BoneLocation);
-
+	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
+	
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
 		TimerHandle,
@@ -346,8 +379,8 @@ void ABoss1::AttackHorizontal()
 
 void ABoss1::Attacking()
 {
-	FVector BoneLocation1 = GetMesh()->GetBoneLocation(FName("root_weapon_r"));
-	FVector BoneLocation2 = GetMesh()->GetBoneLocation(FName("root_weapon_end_r"));
+	const FVector BoneLocation1 = GetMesh()->GetBoneLocation(FName("root_weapon_r"));
+	const FVector BoneLocation2 = GetMesh()->GetBoneLocation(FName("root_weapon_end_r"));
 	FRotator BoneRotation = (BoneLocation2 - BoneLocation1).Rotation();
 	BoneRotation.Pitch += 90;
 	
@@ -355,9 +388,109 @@ void ABoss1::Attacking()
 	WeaponCollider->SetWorldRotation(BoneRotation);
 }
 
-void ABoss1::AttackPush()
+void ABoss1::StartPatternNeutralizeJumping()
 {
+	State = EBossState::Casting;
+	JumpDeltaSeconds = 0;
+	JumpStartPosition = GetActorLocation();
+	JumpTargetPosition = FVector(0, 0, 1500);
 	
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		[&]() -> void
+		{
+			GetCharacterMovement()->GravityScale = 0;
+			State = EBossState::PatternJumping;
+		},
+		JumpCastingDelay,
+		false);
+}
+
+void ABoss1::PatternNeutralizeJumping()
+{
+	constexpr float Delta = 0.1f;
+	if (FMath::IsNearlyEqual(GetActorLocation().X, JumpTargetPosition.X, Delta) &&
+		FMath::IsNearlyEqual(GetActorLocation().Y, JumpTargetPosition.Y, Delta) &&
+		FMath::IsNearlyEqual(GetActorLocation().Z, JumpTargetPosition.Z, Delta))
+	{
+		StartPatternNeutralizeLanding();
+	}
+	else
+	{
+		JumpDeltaSeconds += GetWorld()->GetDeltaSeconds();
+		const FVector NewLocation = FMath::VInterpTo(JumpStartPosition, JumpTargetPosition, JumpDeltaSeconds, 2.0f);
+		SetActorLocation(NewLocation);
+	}
+}
+
+void ABoss1::StartPatternNeutralizeLanding()
+{
+	State = EBossState::Casting;
+	GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		[&]() -> void
+		{
+			GetCharacterMovement()->GravityScale = 1.0f;
+			LaunchCharacter(FVector(0, 0, -JumpLandingVelocity), true, true);
+			State = EBossState::PatternLanding;
+		},
+		JumpLandingDelay,
+		false);
+}
+
+void ABoss1::PatternNeutralizeLanding()
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		State = EBossState::Casting;
+		FTimerHandle TimerHandle;
+		GetWorldTimerManager().SetTimer(
+			TimerHandle,
+			[&]() -> void { StartPatternNeutralize(); },
+			LandingDelay,
+			false);
+	}
+}
+
+void ABoss1::StartPatternNeutralize()
+{
+	State = EBossState::Neutralized;
+	Shield = PatternNeutralizeShields[NowPatternNeutralizeCount];
+	NowMaxShield = Shield;
+	GetWorldTimerManager().SetTimer(
+			PatternTimer,
+			[&]() -> void
+			{
+				NowPatternNeutralizeCount++;
+				Hp += Shield;
+				Shield = 0;
+				TargetPlayer->TakeDamage(PatternNeutralizeFailDamage);
+				State = EBossState::Idle;
+			},
+			PatternNeutralizePersistentTime,
+			false);
+}
+
+void ABoss1::PatternNeutralize()
+{
+	if (Shield <= 0)
+	{
+		GetWorldTimerManager().ClearTimer(PatternTimer);
+		NowPatternNeutralizeCount++;
+		State = EBossState::Groggy;
+		FTimerHandle Timer;
+		GetWorldTimerManager().SetTimer(
+			Timer,
+			[&]() -> void
+			{
+				State = EBossState::Idle;
+			},
+			PatternNeutralizeSuccessGroggyTime,
+			false);
+	}
 }
 
 void ABoss1::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -376,7 +509,7 @@ void ABoss1::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UP
 				State = EBossState::Idle;
 			}
 		}
-		else if (State == EBossState::Jumping && OtherActor->ActorHasTag(FName("Player")))
+		else if (State == EBossState::Landing && OtherActor->ActorHasTag(FName("Player")))
 		{
 			TargetPlayer->TakeDamage(JumpDamage);
 		}
