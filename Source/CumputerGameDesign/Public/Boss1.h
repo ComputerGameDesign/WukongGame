@@ -3,8 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Boss1Clone.h"
+#include "Rock1.h"
 #include "GameFramework/Character.h"
 #include "Boss1.generated.h"
+
+class ABoss1Clone;
 
 UENUM()
 enum class EBossState : uint8
@@ -19,8 +23,12 @@ enum class EBossState : uint8
 	Attack UMETA(DisplayName = "Attack"),
 	Groggy UMETA(DisplayName = "Groggy"),
 	Neutralized UMETA(DisplayName = "Neutralized"),
-	PatternJumping UMETA(DisplayName = "PatternJumping"),
-	PatternLanding UMETA(DisplayName = "PatternLanding"),
+	PatternNeutralizeJumping UMETA(DisplayName = "PatternNeutralizeJumping"),
+	PatternNeutralizeLanding UMETA(DisplayName = "PatternNeutralizeLanding"),
+	PatternRockThrowJumping UMETA(DisplayName = "PatternRockThrowJumping"),
+	PatternRockThrowLanding UMETA(DisplayName = "PatternRockThrowLanding"),
+	PatternCloneJumping UMETA(DisplayName = "PatternCloneJumping"),
+	PatternCloneLanding UMETA(DisplayName = "PatternCloneLanding"),
 	Die UMETA(DisplayName = "Die")
 };
 
@@ -57,125 +65,164 @@ public:
 	UPROPERTY(VisibleAnywhere, Category=State)
 	bool CanAttack = true;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
-	float Speed = 1000.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Values)
-	float MaxHp = 100.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
+	float MaxHp = 200.0f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Values)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	float Hp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Values)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	float NowMaxShield = 1.0f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Values)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	float Shield = 0.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpZLocation = 900.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpLandingVelocity = 7500.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpCastingDelay = 0.5f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpLandingDelay = 0.5f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float LandingDelay = 1.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
-	float JumpDistanceThreshold = 1000.0f;
-
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpCoolTime = 5.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpDamage = 30.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Jump")
 	FVector JumpStartPosition;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Jump")
 	FVector JumpTargetPosition;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Jump")
 	float JumpDeltaSeconds = 0;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Rush")
 	float RushTracingTime = 3.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Rush")
 	float RushSpeed = 8000.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
-	float RushDistanceThreshold = 1000.0f;
-
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Rush")
 	float RushCoolTime = 15.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Rush")
 	float RushDamage = 50.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
-	float AttackDistanceThreshold = 750.0f;
-
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackCoolTime = 1.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackMovingCastingDelay = 0.1f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackCastingDelay = 0.5f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackDelay = 1.5f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackFinishDelay = 0.5f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackDamage = 10.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Attack")
 	FVector AttackStartPosition;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Attack")
 	FVector AttackTargetPosition;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Attack")
 	float AttackDeltaSeconds;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Groggy")
 	float GroggyPersistenceTime = 3.0f;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Groggy")
+	float GroggyDamageMultiplier = 1.5f;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	int32 TotalPatternNeutralizeCount = 3;
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Neutralize")
 	int32 NowPatternNeutralizeCount = 0;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	TArray<float> PatternNeutralizeHpPercents = { 0.8f, 0.6f, 0.4f };
 
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	TArray<float> PatternNeutralizeShields = { 10.0f, 10.0f, 12.0f };
 
-	UPROPERTY(EditAnywhere, Category=Values)
-	float PatternNeutralizeDelay = 1.0f;
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
+	float PatternNeutralizeDelay = 0.5f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	float PatternNeutralizePersistentTime = 8.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	float PatternNeutralizeSuccessGroggyTime = 3.0f;
 	
-	UPROPERTY(EditAnywhere, Category=Values)
+	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	float PatternNeutralizeFailDamage = 40.0f;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	TSubclassOf<ARock1> Rock = ARock1::StaticClass();
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	bool CanPatternRockThrow = true;
+	
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	float PatternRockThrowHpPercent = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	int32 PatternRockThrowTotalRockCount = 10;
+	
+	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|RockThrow")
+	int32 PatternRockThrowNowRockCount = 0;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	float PatternRockThrowStartDelay = 1.5f;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	float PatternRockThrowEndDelay = 1.5f;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	float PatternRockThrowThrowStartDelay = 0.5f;
+	
+	UPROPERTY(EditAnywhere, Category="Gameplay|RockThrow")
+	float PatternRockThrowThrowEndDelay = 1.0f;
+	
+	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
+	TSubclassOf<ABoss1Clone> Clone = ABoss1Clone::StaticClass();
+	
+	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
+	bool CanPatternClone = true;
+	
+	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
+	float PatternCloneHpPercent = 0.1f;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
+	int32 PatternCloneCount = 3;
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
+	TArray<FVector> PatternClonePositions = {
+		FVector(1500, 0, 0),
+		FVector(-750, 1300, 0),
+		FVector(-750, -1300, 0) };
+
+	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
+	float PatternClonePersistentTime = 5.0f;
 	
 	UFUNCTION()
 	FVector GetTargetDirection() const;
@@ -217,6 +264,16 @@ private:
 	void PatternNeutralizeLanding();
 	void StartPatternNeutralize();
 	void PatternNeutralize();
+	void StartPatternRockThrowJumping();
+	void PatternRockThrowJumping();
+	void StartPatternRockThrow();
+	void StartPatternRockThrowLanding();
+	void PatternRockThrowLanding();
+	void StartPatternCloneJumping();
+	void PatternCloneJumping();
+	void StartPatternCloneLanding();
+	void PatternCloneLanding();
+	void StartPatternClone();
 
 	UFUNCTION()
 	void OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);

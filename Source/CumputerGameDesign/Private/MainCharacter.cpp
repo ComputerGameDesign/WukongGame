@@ -4,6 +4,7 @@
 #include "MainCharacter.h"
 
 #include "Boss1.h"
+#include "Boss1Clone.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
@@ -22,7 +23,7 @@ AMainCharacter::AMainCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	Tags.Add(TEXT("Player"));
+	Tags.Add(FName("Player"));
 	
 	GetCharacterMovement()->MaxWalkSpeed = 1000.0f;
 	
@@ -189,13 +190,19 @@ void AMainCharacter::ShootOnce()
 
 		if (bHit && HitResult.GetActor()->ActorHasTag(TEXT("Boss")))
 		{
+			// 충돌한 액터 정보 출력
+			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitResult.GetActor()->GetName());
+			
 			if (ABoss1* Boss = Cast<ABoss1>(HitResult.GetActor()))
 			{
 				Boss->TakeDamage(ShootDamage);
 			}
+
+			if (ABoss1Clone* Clone = Cast<ABoss1Clone>(HitResult.GetActor()))
+			{
+				Clone->Destroy();
+			}
 			
-			// 충돌한 액터 정보 출력
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitResult.GetActor()->GetName());
 
 			// 충돌 위치에 디버그 스피어 그리기
 			DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10.0f, 12, FColor::Blue, false, 1.0f);

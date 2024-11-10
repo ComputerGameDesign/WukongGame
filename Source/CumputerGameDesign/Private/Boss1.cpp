@@ -6,8 +6,6 @@
 #include "EngineUtils.h"
 #include "MainCharacter.h"
 #include "Components/CapsuleComponent.h"
-#include "Engine/StaticMeshActor.h"
-#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 ABoss1::ABoss1()
@@ -15,7 +13,7 @@ ABoss1::ABoss1()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	Tags.Add(TEXT("Boss"));
+	Tags.Add(FName("Boss"));
 	
 	GetCapsuleComponent()->SetCapsuleHalfHeight(96.0f);
 	GetCapsuleComponent()->SetRelativeScale3D(FVector(1.75f, 1.75f, 1.75f));
@@ -125,7 +123,7 @@ void ABoss1::SetCoolTime(bool &CanValue, const float CoolTime) const
 void ABoss1::TakeDamage(float Damage)
 {
 	if (State == EBossState::Groggy)
-		Damage *= 1.5f;
+		Damage *= GroggyDamageMultiplier;
 
 	Shield = FMath::Max(Shield - Damage, 0.0f);
 	Damage = FMath::Max(Damage - Shield, 0.0f);
@@ -164,16 +162,32 @@ void ABoss1::CheckState()
 		Attacking();
 		break;
 
-	case EBossState::PatternJumping:
+	case EBossState::PatternNeutralizeJumping:
 		PatternNeutralizeJumping();
 		break;
 
-	case EBossState::PatternLanding:
+	case EBossState::PatternNeutralizeLanding:
 		PatternNeutralizeLanding();
 		break;
 
 	case EBossState::Neutralized:
 		PatternNeutralize();
+		break;
+
+	case EBossState::PatternRockThrowJumping:
+		PatternRockThrowJumping();
+		break;
+
+	case EBossState::PatternRockThrowLanding:
+		PatternRockThrowLanding();
+		break;
+
+	case EBossState::PatternCloneJumping:
+		PatternCloneJumping();
+		break;
+
+	case EBossState::PatternCloneLanding:
+		PatternCloneLanding();
 		break;
 		
 	default:
@@ -183,7 +197,15 @@ void ABoss1::CheckState()
 
 void ABoss1::IdleTransition()
 {
-	if (NowPatternNeutralizeCount < TotalPatternNeutralizeCount &&
+	if (CanPatternClone && Hp / MaxHp <= PatternCloneHpPercent)
+	{
+		StartPatternCloneJumping();
+	}
+	else if (CanPatternRockThrow && Hp / MaxHp <= PatternRockThrowHpPercent)
+	{
+		StartPatternRockThrowJumping();
+	}
+	else if (NowPatternNeutralizeCount < TotalPatternNeutralizeCount &&
 		Hp / MaxHp <= PatternNeutralizeHpPercents[NowPatternNeutralizeCount])
 	{
 		StartPatternNeutralizeJumping();
@@ -202,104 +224,6 @@ void ABoss1::IdleTransition()
 	}
 }
 
-void ABoss1::StartJumping()
-{
-	SetCoolTime(CanJumpToPlayer, JumpCoolTime);
-	State = EBossState::Casting;
-	
-	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	
-	const FVector Direction = GetTargetDirectionWithoutZ();
-	SetActorRotationSmooth(Direction.Rotation(), 20.0f);
-
-	JumpStartPosition = GetActorLocation();
-	JumpTargetPosition = TargetPlayer->GetActorLocation();
-	JumpTargetPosition.Z = JumpZLocation;
-	JumpDeltaSeconds = 0;
-
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			GetCharacterMovement()->GravityScale = 0;
-			State = EBossState::Jumping;
-		},
-		JumpCastingDelay,
-		false);
-}
-
-void ABoss1::Jumping()
-{
-	constexpr float Delta = 0.1f;
-	if (FMath::IsNearlyEqual(GetActorLocation().X, JumpTargetPosition.X, Delta) &&
-		FMath::IsNearlyEqual(GetActorLocation().Y, JumpTargetPosition.Y, Delta) &&
-		FMath::IsNearlyEqual(GetActorLocation().Z, JumpTargetPosition.Z, Delta))
-	{
-		StartLanding();
-	}
-	else
-	{
-		JumpDeltaSeconds += GetWorld()->GetDeltaSeconds();
-		const FVector NewLocation = FMath::VInterpTo(JumpStartPosition, JumpTargetPosition, JumpDeltaSeconds, 2.0f);
-		SetActorLocation(NewLocation);
-	}
-}
-
-void ABoss1::StartLanding()
-{
-	State = EBossState::Casting;
-	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			GetCharacterMovement()->GravityScale = 1.0f;
-			LaunchCharacter(FVector(0, 0, -JumpLandingVelocity), true, true);
-			State = EBossState::Landing;
-		},
-		JumpLandingDelay,
-		false);
-}
-
-
-void ABoss1::Landing()
-{
-	if (!GetCharacterMovement()->IsFalling())
-	{
-		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
-		GetWorldTimerManager().SetTimer(
-			TimerHandle,
-			[&]() -> void { AttackMeleeOnce(); },
-			LandingDelay,
-			false);
-	}
-}
-
-void ABoss1::StartRushing()
-{
-	SetCoolTime(CanRush, RushCoolTime);
-	State = EBossState::RushTracing;
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void { State = EBossState::Rushing; },
-		RushTracingTime,
-		false);
-}
-
-void ABoss1::RushTracing()
-{
-	SetActorRotationSmoothOnce(GetTargetDirectionWithoutZ().Rotation(),20.0f, GetWorld()->DeltaTimeSeconds);
-}
-
-void ABoss1::Rushing()
-{
-	GetCharacterMovement()->Velocity = GetTransform().TransformVector(GetActorLocation().ForwardVector) * RushSpeed;
-}
-
 void ABoss1::StartGroggy()
 {
 	State = EBossState::Groggy;
@@ -311,187 +235,6 @@ void ABoss1::StartGroggy()
 		false);
 }
 
-void ABoss1::StartAttack()
-{
-	SetCoolTime(CanAttack, AttackCoolTime);
-	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
-	
-	State = EBossState::Casting;
-
-	AttackDeltaSeconds = 0;
-	AttackStartPosition = GetActorLocation();
-	AttackStartPosition.Z = 0;
-	AttackTargetPosition = TargetPlayer->GetActorLocation();
-	AttackTargetPosition.Z = 0;
-	
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			State = EBossState::AttackMoving;
-		},
-		AttackMovingCastingDelay,
-		false);
-}
-
-void ABoss1::AttackMoving()
-{
-	constexpr float Delta = 0.1f;
-	if (FMath::IsNearlyEqual(GetActorLocation().X, AttackTargetPosition.X, Delta) &&
-		FMath::IsNearlyEqual(GetActorLocation().Y, AttackTargetPosition.Y, Delta))
-	{
-		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
-		GetWorldTimerManager().SetTimer(
-			TimerHandle,
-			[&]() -> void
-			{
-				AttackMeleeOnce();
-			},
-			AttackCastingDelay,
-			false);
-	}
-	else
-	{
-		AttackDeltaSeconds += GetWorld()->GetDeltaSeconds();
-		FVector NewLocation = FMath::VInterpTo(AttackStartPosition, AttackTargetPosition, AttackDeltaSeconds, 5.0f);
-		NewLocation.Z = GetActorLocation().Z;
-		SetActorLocation(NewLocation);
-	}
-}
-
-void ABoss1::AttackMeleeOnce()
-{
-	State = EBossState::Attack;
-	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
-	
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			State = EBossState::Idle;
-		},
-		AttackDelay,
-		false);
-}
-
-void ABoss1::Attacking()
-{
-	const FVector BoneLocation1 = GetMesh()->GetBoneLocation(FName("root_weapon_r"));
-	const FVector BoneLocation2 = GetMesh()->GetBoneLocation(FName("root_weapon_end_r"));
-	FRotator BoneRotation = (BoneLocation2 - BoneLocation1).Rotation();
-	BoneRotation.Pitch += 90;
-	
-	WeaponCollider->SetWorldLocation(BoneLocation1);
-	WeaponCollider->SetWorldRotation(BoneRotation);
-}
-
-void ABoss1::StartPatternNeutralizeJumping()
-{
-	State = EBossState::Casting;
-	JumpDeltaSeconds = 0;
-	JumpStartPosition = GetActorLocation();
-	JumpTargetPosition = FVector(0, 0, 1500);
-	
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			GetCharacterMovement()->GravityScale = 0;
-			State = EBossState::PatternJumping;
-		},
-		JumpCastingDelay,
-		false);
-}
-
-void ABoss1::PatternNeutralizeJumping()
-{
-	constexpr float Delta = 0.1f;
-	if (FMath::IsNearlyEqual(GetActorLocation().X, JumpTargetPosition.X, Delta) &&
-		FMath::IsNearlyEqual(GetActorLocation().Y, JumpTargetPosition.Y, Delta) &&
-		FMath::IsNearlyEqual(GetActorLocation().Z, JumpTargetPosition.Z, Delta))
-	{
-		StartPatternNeutralizeLanding();
-	}
-	else
-	{
-		JumpDeltaSeconds += GetWorld()->GetDeltaSeconds();
-		const FVector NewLocation = FMath::VInterpTo(JumpStartPosition, JumpTargetPosition, JumpDeltaSeconds, 2.0f);
-		SetActorLocation(NewLocation);
-	}
-}
-
-void ABoss1::StartPatternNeutralizeLanding()
-{
-	State = EBossState::Casting;
-	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		[&]() -> void
-		{
-			GetCharacterMovement()->GravityScale = 1.0f;
-			LaunchCharacter(FVector(0, 0, -JumpLandingVelocity), true, true);
-			State = EBossState::PatternLanding;
-		},
-		JumpLandingDelay,
-		false);
-}
-
-void ABoss1::PatternNeutralizeLanding()
-{
-	if (!GetCharacterMovement()->IsFalling())
-	{
-		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
-		GetWorldTimerManager().SetTimer(
-			TimerHandle,
-			[&]() -> void { StartPatternNeutralize(); },
-			LandingDelay,
-			false);
-	}
-}
-
-void ABoss1::StartPatternNeutralize()
-{
-	State = EBossState::Neutralized;
-	Shield = PatternNeutralizeShields[NowPatternNeutralizeCount];
-	NowMaxShield = Shield;
-	GetWorldTimerManager().SetTimer(
-			PatternTimer,
-			[&]() -> void
-			{
-				NowPatternNeutralizeCount++;
-				Hp += Shield;
-				Shield = 0;
-				TargetPlayer->TakeDamage(PatternNeutralizeFailDamage);
-				State = EBossState::Idle;
-			},
-			PatternNeutralizePersistentTime,
-			false);
-}
-
-void ABoss1::PatternNeutralize()
-{
-	if (Shield <= 0)
-	{
-		GetWorldTimerManager().ClearTimer(PatternTimer);
-		NowPatternNeutralizeCount++;
-		State = EBossState::Groggy;
-		FTimerHandle Timer;
-		GetWorldTimerManager().SetTimer(
-			Timer,
-			[&]() -> void
-			{
-				State = EBossState::Idle;
-			},
-			PatternNeutralizeSuccessGroggyTime,
-			false);
-	}
-}
 
 void ABoss1::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
@@ -529,7 +272,7 @@ void ABoss1::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 }
 
 void ABoss1::DrawDebug() const
-{
+{/*
 	FColor color;
 	if (GetTargetDirection().Size() > JumpDistanceThreshold)
 		color = FColor::Red;
@@ -553,5 +296,5 @@ void ABoss1::DrawDebug() const
 		1.0f);
 
 	
-	DrawDebugSphere(GetWorld(), JumpTargetPosition, 500, 12, FColor::Blue, false, -1, 0, 1.0f);
+	DrawDebugSphere(GetWorld(), JumpTargetPosition, 500, 12, FColor::Blue, false, -1, 0, 1.0f);*/
 }
