@@ -36,6 +36,12 @@ public:
 	UPROPERTY(VisibleInstanceOnly, Category=Gameplay)
 	float MovingDeltaSeconds;
 
+	UPROPERTY(EditAnywhere, Category="Effect")
+	UParticleSystem* SpawnEffect;
+
+	UPROPERTY(EditAnywhere, Category="Effect")
+	UParticleSystem* DespawnEffect;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

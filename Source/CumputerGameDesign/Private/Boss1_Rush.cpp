@@ -7,9 +7,8 @@ void ABoss1::StartRushing()
 {
 	SetCoolTime(CanRush, RushCoolTime);
 	State = EBossState::RushTracing;
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void { State = EBossState::Rushing; },
 		RushTracingTime,
 		false);

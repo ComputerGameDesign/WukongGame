@@ -11,9 +11,8 @@ void ABoss1::StartPatternRockThrowJumping()
 	JumpStartPosition = GetActorLocation();
 	JumpTargetPosition = FVector(0, 0, 1500);
 	
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 0;
@@ -43,6 +42,7 @@ void ABoss1::PatternRockThrowJumping()
 void ABoss1::StartPatternRockThrow()
 {
 	State = EBossState::Casting;
+	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
 	CanPatternRockThrow = false;
 	GetWorldTimerManager().SetTimer(
 		PatternTimer,
@@ -67,9 +67,8 @@ void ABoss1::StartPatternRockThrowLanding()
 {
 	State = EBossState::Casting;
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 1.0f;
@@ -85,9 +84,8 @@ void ABoss1::PatternRockThrowLanding()
 	if (!GetCharacterMovement()->IsFalling())
 	{
 		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(
-			TimerHandle,
+			PatternTimer,
 			[&]() -> void { State = EBossState::Idle; },
 			LandingDelay,
 			false);

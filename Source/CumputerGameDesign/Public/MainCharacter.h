@@ -72,6 +72,12 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = GamePlay)
 	float Hp;
+	
+	UPROPERTY(EditAnywhere, Category = GamePlay)
+	bool IsImmune = false;
+	
+	UPROPERTY(EditAnywhere, Category = GamePlay)
+	float ImmunePersistantTime = 3.0f;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	float ShootDamage = 1.0f;
@@ -95,7 +101,7 @@ public:
 	int32 NowBulletCount = 4;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
-	float ReloadingDelay = 1.0f;
+	float ReloadingDelay = 2.8f;
 	
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	bool IsReloading = false;
@@ -103,6 +109,39 @@ public:
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	float Speed = 500.0f;
 
+	UPROPERTY(EditAnywhere, Category = GamePlay)
+	bool IsDie = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* ShootEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* ShootTrailEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* ShootSound;
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* ReloadSound;
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundCue* PainSound;
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundCue* JumpSound;
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	UAudioComponent* MoveAudioComp;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundCue* MoveSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundCue* DieSound;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "Sound")
+	bool IsMoveSoundPlaying = false;
+	
 	UFUNCTION()
 	void TakeDamage(const float Damage);
 
@@ -115,8 +154,10 @@ private:
 	void ShootOnce();
 	void ShootAll(const struct FInputActionValue &inputValue);
 	void Reload(const struct FInputActionValue &inputValue);
+	void Die();
 
-	FTimerHandle Timer;
+	FTimerHandle DashTimer;
+	FTimerHandle ImmuneTimer;
 	FTimerHandle ShootTimer;
 	FTimerHandle ShootAllTimer;
 	FVector MoveDirection;

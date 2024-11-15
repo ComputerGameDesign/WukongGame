@@ -5,6 +5,8 @@
 
 #include "Boss1.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 
 // Sets default values
 ABoss1Clone::ABoss1Clone()
@@ -27,6 +29,9 @@ ABoss1Clone::ABoss1Clone()
 	SkeletalMesh->SetRelativeLocation(FVector(8, 0, -96));
 	SkeletalMesh->SetRelativeRotation(FRotator(0, -90, 0));
 	SkeletalMesh->SetupAttachment(CapsuleComponent);
+
+	SpawnEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/Ultimate/FX/p_CloneSpawn.p_CloneSpawn'"));
+	DespawnEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/Ultimate/FX/p_CloneDespawn.p_CloneDespawn'"));
 }
 
 // Called when the game starts or when spawned
@@ -39,7 +44,8 @@ void ABoss1Clone::BeginPlay()
 void ABoss1Clone::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
-
+	
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DespawnEffect, GetActorLocation(), GetActorRotation());
 	GetWorldTimerManager().ClearTimer(Timer);
 }
 
@@ -62,6 +68,7 @@ void ABoss1Clone::Moving()
 		FMath::IsNearlyEqual(GetActorLocation().Y, EndPosition.Y, Delta))
 	{
 		CanMove = false;
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), SpawnEffect, GetActorLocation(), GetActorRotation());
 		StartTimer();
 	}
 	else
@@ -98,5 +105,4 @@ void ABoss1Clone::StartTimer()
 		PersistentTime,
 		false);
 }
-
 

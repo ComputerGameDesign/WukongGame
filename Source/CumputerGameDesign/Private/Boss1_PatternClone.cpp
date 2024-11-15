@@ -11,9 +11,8 @@ void ABoss1::StartPatternCloneJumping()
 	JumpStartPosition = GetActorLocation();
 	JumpTargetPosition = FVector(0, 0, 1500);
 	
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 0;
@@ -44,9 +43,8 @@ void ABoss1::StartPatternCloneLanding()
 {
 	State = EBossState::Casting;
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 1.0f;
@@ -62,9 +60,8 @@ void ABoss1::PatternCloneLanding()
 	if (!GetCharacterMovement()->IsFalling())
 	{
 		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(
-			TimerHandle,
+			PatternTimer,
 			[&]() -> void { StartPatternClone(); },
 			LandingDelay,
 			false);
@@ -73,20 +70,20 @@ void ABoss1::PatternCloneLanding()
 
 void ABoss1::StartPatternClone()
 {
+	State = EBossState::PatternCloning;
 	CanPatternClone = false;
 
 	for (int32 i = 0; i < PatternCloneCount; i++)
 	{
-		if (auto c= GetWorld()->SpawnActor<ABoss1Clone>(Clone, GetActorLocation(), GetActorRotation()))
+		if (auto c= GetWorld()->SpawnActor<ABoss1Clone>(Clone, GetActorLocation(), FRotationMatrix::MakeFromX(PatternClonePositions[i]).Rotator()))
 		{
 			c->PersistentTime = PatternClonePersistentTime;
 			c->SetMove(PatternClonePositions[i]);
 		}
 	}
 	
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void { State = EBossState::Idle; },
 		PatternClonePersistentTime,
 		false);

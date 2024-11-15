@@ -10,11 +10,18 @@
 #include "InputMappingContext.h"
 #include "Camera/CameraComponent.h"
 #include "Components/ArrowComponent.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SplineComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Sound/SoundCue.h"
 
+class USplineComponent;
 class ABoss1;
 class UEnhancedInputLocalPlayerSubsystem;
 // Sets default values
@@ -66,6 +73,20 @@ AMainCharacter::AMainCharacter()
 	if (IaShootAsset.Succeeded()) Ia_Shoot = IaShootAsset.Object;
 	if (IaShootAllAsset.Succeeded()) Ia_ShootAll = IaShootAllAsset.Object;
 	if (IaReloadAsset.Succeeded()) Ia_Reload = IaReloadAsset.Object;
+
+	ShootEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Primary/FX/P_Revenant_Primary_MuzzleFlash.P_Revenant_Primary_MuzzleFlash'"));
+	ShootTrailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_SingleTargetCore_TargetBeam.P_SingleTargetCore_TargetBeam'"));
+	
+	ShootSound = LoadObject<USoundBase>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Single_Fire.Revenant_Gun_Single_Fire'"));
+	ReloadSound = LoadObject<USoundBase>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Reload.Revenant_Gun_Reload'"));
+	PainSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_PainHeavy.Revenant_Effort_PainHeavy'"));
+	JumpSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_Jump.Revenant_Effort_Jump'"));
+	MoveSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/SmallSoundKit/SSKCue/FootstepsCue/S_Concrete_Mono_Cue.S_Concrete_Mono_Cue'"));
+	DieSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_Death.Revenant_Effort_Death'"));
+	
+	MoveAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComp"));
+	MoveAudioComp->SetSound(MoveSound);
+	MoveAudioComp->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -88,11 +109,18 @@ void AMainCharacter::BeginPlay()
 void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	AddMovementInput(MoveDirection * DeltaTime * Speed);
-	MoveDirection = FVector::ZeroVector;
 
-	DrawDebug();
+	if (MoveDirection != FVector::ZeroVector)
+	{
+		AddMovementInput(MoveDirection * DeltaTime * Speed);
+		MoveDirection = FVector::ZeroVector;
+
+		if (!MoveAudioComp->IsPlaying())
+		{
+			MoveAudioComp->Play();
+		}
+	}
+		DrawDebug();
 }
 
 // Called to bind functionality to input
@@ -124,6 +152,7 @@ void AMainCharacter::Jump(const struct FInputActionValue &inputValue)
 {
 	if (!IsDashing)
 	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpSound, GetActorLocation());
 		Super::Jump();
 	}
 }
@@ -136,7 +165,7 @@ void AMainCharacter::Dash(const struct FInputActionValue &inputValue)
 		const FVector DashDirection = FVector(CharacterVelocity.X, CharacterVelocity.Y, 0).GetSafeNormal();
 
 		IsDashing = true;
-		GetWorldTimerManager().SetTimer(Timer, [&]() -> void { IsDashing = false; }, DashCoolTime, false);
+		GetWorldTimerManager().SetTimer(DashTimer, [&]() -> void { IsDashing = false; }, DashCoolTime, false);
 		LaunchCharacter(DashDirection * DashPower, true, false);
 	}
 }
@@ -150,7 +179,7 @@ void AMainCharacter::View(const struct FInputActionValue &inputValue)
 
 void AMainCharacter::Shoot(const struct FInputActionValue &inputValue)
 {
-	if (!IsShoot && !IsShootAll && !IsReloading)
+	if (NowBulletCount > 0 && !IsShoot && !IsShootAll && !IsReloading)
 	{
 		IsShoot = true;
 		ShootOnce();
@@ -171,27 +200,36 @@ void AMainCharacter::ShootOnce()
 	{
 		NowBulletCount--;
 		
-		const FVector Start = GetMesh()->GetBoneLocation(FName("gun_pin"));
-		const FVector ForwardVector = GetControlRotation().Vector();
-		const FVector End = Start + (ForwardVector * 10000.0f);
+		const FVector FirePos = GetMesh()->GetBoneLocation(FName("gun_pin"));
 
-		// 충돌 정보를 저장할 FHitResult 구조체
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),  // 현재 월드
+			ShootEffect,  // 사용할 파티클 시스템
+			FirePos,
+			FRotationMatrix::MakeFromX(GetActorForwardVector()).Rotator()// 생성할 위치
+		);
+
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShootSound, FirePos);
+		auto Beam = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShootTrailEffect, FirePos);
+
+		FVector Start = CameraComp->GetComponentLocation();
+		FVector CameraDir = CameraComp->GetForwardVector();
+		FVector End = Start + CameraDir * 10000;
+
 		FHitResult HitResult;
-
-		// 충돌 채널 설정 (기본적으로는 ECC_Visibility 사용)
+		
 		FCollisionQueryParams CollisionParams;
 		CollisionParams.AddIgnoredActor(this); // 자기 자신 무시
 
 		// 레이캐스트 수행
 		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Pawn, CollisionParams);
-
-		// 디버그용 레이 표시
-		DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.0f, 0, 1.0f);
-
+		
 		if (bHit && HitResult.GetActor()->ActorHasTag(TEXT("Boss")))
 		{
-			// 충돌한 액터 정보 출력
-			UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitResult.GetActor()->GetName());
+			const FVector HitPos = HitResult.ImpactPoint;
+
+			Beam->SetBeamSourcePoint(0, FirePos, 0);
+			Beam->SetBeamTargetPoint(0, HitPos, 0);
 			
 			if (ABoss1* Boss = Cast<ABoss1>(HitResult.GetActor()))
 			{
@@ -202,17 +240,20 @@ void AMainCharacter::ShootOnce()
 			{
 				Clone->Destroy();
 			}
-			
+		}
+		else
+		{
+			const FVector EndPos = FirePos + CameraDir * 10000;
 
-			// 충돌 위치에 디버그 스피어 그리기
-			DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10.0f, 12, FColor::Blue, false, 1.0f);
+			Beam->SetBeamSourcePoint(0, FirePos, 0);
+			Beam->SetBeamTargetPoint(0, EndPos, 0);
 		}
 	}
 }
 
 void AMainCharacter::ShootAll(const struct FInputActionValue& inputValue)
 {
-	if (!IsShootAll && !IsReloading)
+	if (NowBulletCount > 0 && !IsShootAll && !IsReloading)
 	{
 		IsShootAll = true;
 		GetWorldTimerManager().SetTimer(
@@ -233,8 +274,10 @@ void AMainCharacter::ShootAll(const struct FInputActionValue& inputValue)
 
 void AMainCharacter::Reload(const struct FInputActionValue& inputValue)
 {
-	if (!IsReloading)
+	if (!IsReloading && NowBulletCount < MaxBulletCount)
 	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReloadSound, GetActorLocation());
+		
 		IsReloading = true;
 		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(
@@ -249,10 +292,46 @@ void AMainCharacter::Reload(const struct FInputActionValue& inputValue)
 	}
 }
 
+void AMainCharacter::Die()
+{
+	IsDie = true;
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		PlayerController->SetIgnoreMoveInput(true);
+		PlayerController->SetIgnoreLookInput(true);
+	}
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DieSound, GetActorLocation());
+}
+
 void AMainCharacter::TakeDamage(const float Damage)
 {
-	Hp = FMath::Max(Hp - Damage, 0.0f);
-	// immune
+	if (!IsImmune)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), PainSound, GetActorLocation());
+		
+		Hp = FMath::Max(Hp - Damage, 0.0f);
+
+		if (Hp <= 0)
+		{
+			Die();
+		}
+		else
+		{
+			FVector KnockbackDirection = -GetActorForwardVector() * 500;
+			KnockbackDirection.Z = 500.0f;
+			LaunchCharacter(KnockbackDirection, true, true);
+		
+			IsImmune = true;
+			GetWorldTimerManager().SetTimer(
+				ImmuneTimer,
+				[&]() -> void
+				{
+					IsImmune = false;
+				},
+				ImmunePersistantTime,
+				false);
+		}
+	}
 }
 
 void AMainCharacter::DrawDebug() const
@@ -261,6 +340,5 @@ void AMainCharacter::DrawDebug() const
 	FVector ForwardVector = GetControlRotation().Vector();
 	FVector End = Start + (ForwardVector * 50.0f); // 1000 단위 거리까지 레이캐스트
 	DrawDebugDirectionalArrow(GetWorld(), Start, End, 50.0f, FColor::Red, false, -1, 0, 1.0f);
-	
 }
 

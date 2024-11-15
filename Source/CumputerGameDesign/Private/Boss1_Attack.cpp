@@ -16,9 +16,8 @@ void ABoss1::StartAttack()
 	AttackTargetPosition = TargetPlayer->GetActorLocation();
 	AttackTargetPosition.Z = 0;
 	
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			State = EBossState::AttackMoving;
@@ -34,9 +33,8 @@ void ABoss1::AttackMoving()
 		FMath::IsNearlyEqual(GetActorLocation().Y, AttackTargetPosition.Y, Delta))
 	{
 		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(
-			TimerHandle,
+			PatternTimer,
 			[&]() -> void
 			{
 				AttackMeleeOnce();
@@ -58,9 +56,8 @@ void ABoss1::AttackMeleeOnce()
 	State = EBossState::Attack;
 	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
 	
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			State = EBossState::Idle;

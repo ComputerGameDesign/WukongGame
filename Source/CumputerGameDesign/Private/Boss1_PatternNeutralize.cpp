@@ -2,6 +2,7 @@
 
 #include "MainCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 void ABoss1::StartPatternNeutralizeJumping()
 {
@@ -10,9 +11,8 @@ void ABoss1::StartPatternNeutralizeJumping()
 	JumpStartPosition = GetActorLocation();
 	JumpTargetPosition = FVector(0, 0, 1500);
 	
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 0;
@@ -43,9 +43,8 @@ void ABoss1::StartPatternNeutralizeLanding()
 {
 	State = EBossState::Casting;
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 1.0f;
@@ -61,9 +60,9 @@ void ABoss1::PatternNeutralizeLanding()
 	if (!GetCharacterMovement()->IsFalling())
 	{
 		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
+		SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
 		GetWorldTimerManager().SetTimer(
-			TimerHandle,
+			PatternTimer,
 			[&]() -> void { StartPatternNeutralize(); },
 			LandingDelay,
 			false);
@@ -74,14 +73,15 @@ void ABoss1::StartPatternNeutralize()
 {
 	State = EBossState::Neutralized;
 	Shield = PatternNeutralizeShields[NowPatternNeutralizeCount];
+	NowPatternNeutralizeCount++;
 	NowMaxShield = Shield;
 	GetWorldTimerManager().SetTimer(
 			PatternTimer,
 			[&]() -> void
 			{
-				NowPatternNeutralizeCount++;
 				Hp += Shield;
 				Shield = 0;
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), NeutralizeFailEffect, GetActorLocation());
 				TargetPlayer->TakeDamage(PatternNeutralizeFailDamage);
 				State = EBossState::Idle;
 			},
@@ -94,11 +94,9 @@ void ABoss1::PatternNeutralize()
 	if (Shield <= 0)
 	{
 		GetWorldTimerManager().ClearTimer(PatternTimer);
-		NowPatternNeutralizeCount++;
 		State = EBossState::Groggy;
-		FTimerHandle Timer;
 		GetWorldTimerManager().SetTimer(
-			Timer,
+			PatternTimer,
 			[&]() -> void
 			{
 				State = EBossState::Idle;

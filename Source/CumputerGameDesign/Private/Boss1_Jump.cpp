@@ -1,7 +1,11 @@
 ﻿#include "Boss1.h"
 
 #include "MainCharacter.h"
+#include "MainGameModeBase.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 void ABoss1::StartJumping()
 {
@@ -18,9 +22,8 @@ void ABoss1::StartJumping()
 	JumpTargetPosition.Z = JumpZLocation;
 	JumpDeltaSeconds = 0;
 
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 0;
@@ -51,9 +54,8 @@ void ABoss1::StartLanding()
 {
 	State = EBossState::Casting;
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void
 		{
 			GetCharacterMovement()->GravityScale = 1.0f;
@@ -69,10 +71,24 @@ void ABoss1::Landing()
 {
 	if (!GetCharacterMovement()->IsFalling())
 	{
+		UGameplayStatics::PlaySoundAtLocation(this, LandingSound, GetActorLocation());
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),  // 현재 월드
+			LandingEffect,  // 사용할 파티클 시스템
+			GetActorLocation(),
+			FRotator(90, 0, 0),
+			FVector(5, 5, 5)
+		);
+		
+		auto Player = Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->Player;
+		if (!Player->GetCharacterMovement()->IsFalling())
+		{
+			Player->TakeDamage(JumpDamage);
+		}
+
 		State = EBossState::Casting;
-		FTimerHandle TimerHandle;
 		GetWorldTimerManager().SetTimer(
-			TimerHandle,
+			PatternTimer,
 			[&]() -> void { AttackMeleeOnce(); },
 			LandingDelay,
 			false);

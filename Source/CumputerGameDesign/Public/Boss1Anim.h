@@ -19,7 +19,10 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool IsFalling = false;
+	bool IsJumping = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsCasting = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsGroggy = false;
@@ -42,9 +45,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 AttackIndex = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsNeutralizing = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsCloning = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsDie = false;
+
 	UFUNCTION(BlueprintCallable)
 	bool IsJogFwd() const;
 
 	UFUNCTION(BlueprintCallable)
 	bool AttackIndexEqualWith(const int32 Index) const;
+
+	UFUNCTION(BlueprintCallable)
+	void EndAttack() const;
 };

@@ -3,6 +3,9 @@
 
 #include "Boss1Anim.h"
 #include "Boss1.h"
+#include "Animation/AnimExecutionContext.h"
+#include "Animation/AnimNodeReference.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 void UBoss1Anim::NativeUpdateAnimation(float DeltaSeconds)
 {
@@ -10,7 +13,18 @@ void UBoss1Anim::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (const ABoss1* Boss = Cast<ABoss1>(TryGetPawnOwner()))
 	{
-		IsFalling = Boss->State == EBossState::Jumping;
+		IsJumping = Boss->State == EBossState::Jumping ||
+					Boss->State == EBossState::PatternNeutralizeJumping ||
+					Boss->State == EBossState::PatternRockThrowJumping ||
+					Boss->State == EBossState::PatternCloneJumping ||
+					Boss->State == EBossState::Landing ||
+					Boss->State == EBossState::PatternNeutralizeLanding ||
+					Boss->State == EBossState::PatternRockThrowLanding ||
+					Boss->State == EBossState::PatternCloneLanding ||
+					Boss->GetCharacterMovement()->IsFalling();
+
+		IsCasting = Boss->State == EBossState::Casting;
+		
 		IsGroggy = Boss->State == EBossState::Groggy;
 		IsRushTracing = Boss->State == EBossState::RushTracing;
 		IsRushing = Boss->State == EBossState::Rushing;
@@ -18,6 +32,11 @@ void UBoss1Anim::NativeUpdateAnimation(float DeltaSeconds)
 		IsAttackMoving = Boss->State == EBossState::AttackMoving;
 		if (IsAttack)
 			AttackIndex = FMath::RandRange(0, AttackMaxIndex);
+
+		IsNeutralizing = Boss->State == EBossState::Neutralized;
+		IsCloning = Boss->State == EBossState::PatternCloning;
+
+		IsDie = Boss->State == EBossState::Die;
 	}
 }
 
@@ -29,4 +48,12 @@ bool UBoss1Anim::IsJogFwd() const
 bool UBoss1Anim::AttackIndexEqualWith(const int32 Index) const
 {
 	return AttackIndex == Index;
+}
+
+void UBoss1Anim::EndAttack() const
+{
+	if (const ABoss1* Boss = Cast<ABoss1>(TryGetPawnOwner()))
+	{
+		Boss->State = EBossState::Idle;
+	}
 }

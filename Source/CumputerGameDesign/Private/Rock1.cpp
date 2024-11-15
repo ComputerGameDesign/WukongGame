@@ -13,7 +13,7 @@ ARock1::ARock1()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	Sphere->SetRelativeScale3D(FVector(5, 5, 5));
-	Damage = 30;
+	Damage = 50;
 	MiniRock = ARock2::StaticClass();
 }
 
@@ -33,11 +33,12 @@ void ARock1::Tick(float DeltaTime)
 
 void ARock1::OnFloorHit()
 {
-	auto MiniRock1 = GetWorld()->SpawnActor<ARock2>(MiniRock, GetActorLocation() + FVector(0, 0, 0), GetActorRotation());
-	auto MiniRock2 = GetWorld()->SpawnActor<ARock2>(MiniRock, GetActorLocation() + FVector(0, 0, 0), GetActorRotation());
+	auto MiniRock1 = GetWorld()->SpawnActor<ARock2>(MiniRock, GetActorLocation() + FVector(50, 50, 100), GetActorRotation());
+	auto MiniRock2 = GetWorld()->SpawnActor<ARock2>(MiniRock, GetActorLocation() + FVector(-50, -50, 100), GetActorRotation());
 
-	MiniRock1->Sphere->AddImpulse(FVector(100000, 100000, 2000000));
-	MiniRock2->Sphere->AddImpulse(FVector(-100000, -100000, 2000000));
+	
+	MiniRock1->Sphere->AddImpulse(FVector(100000, 100000, 1500000));
+	MiniRock2->Sphere->AddImpulse(FVector(-100000, -100000, 1500000));
 	
 	Destroy();
 }

@@ -8,8 +8,6 @@
 #include "GameFramework/Character.h"
 #include "Boss1.generated.h"
 
-class ABoss1Clone;
-
 UENUM()
 enum class EBossState : uint8
 {
@@ -27,6 +25,7 @@ enum class EBossState : uint8
 	PatternNeutralizeLanding UMETA(DisplayName = "PatternNeutralizeLanding"),
 	PatternRockThrowJumping UMETA(DisplayName = "PatternRockThrowJumping"),
 	PatternRockThrowLanding UMETA(DisplayName = "PatternRockThrowLanding"),
+	PatternCloning UMETA(DisplayName = "PatternCloning"),
 	PatternCloneJumping UMETA(DisplayName = "PatternCloneJumping"),
 	PatternCloneLanding UMETA(DisplayName = "PatternCloneLanding"),
 	Die UMETA(DisplayName = "Die")
@@ -53,8 +52,8 @@ public:
 	UPROPERTY(EditAnyWhere)
 	class UCapsuleComponent* WeaponCollider;
 
-	UPROPERTY(VisibleAnywhere, Category=State)
-	EBossState State = EBossState::Idle;
+	UPROPERTY(EditAnywhere, Category=State)
+	mutable EBossState State = EBossState::Idle;
 
 	UPROPERTY(VisibleAnywhere, Category=State)
 	bool CanJumpToPlayer = true;
@@ -84,13 +83,13 @@ public:
 	float JumpLandingVelocity = 7500.0f;
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
-	float JumpCastingDelay = 0.5f;
+	float JumpCastingDelay = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpLandingDelay = 0.5f;
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
-	float LandingDelay = 1.0f;
+	float LandingDelay = 0.5f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Jump")
 	float JumpCoolTime = 5.0f;
@@ -126,13 +125,13 @@ public:
 	float AttackMovingCastingDelay = 0.1f;
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
-	float AttackCastingDelay = 0.5f;
+	float AttackCastingDelay = 0.2f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
-	float AttackDelay = 1.5f;
+	float AttackDelay = 1.3f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
-	float AttackFinishDelay = 0.5f;
+	float AttackFinishDelay = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
 	float AttackDamage = 10.0f;
@@ -168,10 +167,10 @@ public:
 	float PatternNeutralizeDelay = 0.5f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
-	float PatternNeutralizePersistentTime = 8.0f;
+	float PatternNeutralizePersistentTime = 10.0f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
-	float PatternNeutralizeSuccessGroggyTime = 3.0f;
+	float PatternNeutralizeSuccessGroggyTime = 6.0f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Neutralize")
 	float PatternNeutralizeFailDamage = 40.0f;
@@ -204,7 +203,7 @@ public:
 	float PatternRockThrowThrowEndDelay = 1.0f;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
-	TSubclassOf<ABoss1Clone> Clone = ABoss1Clone::StaticClass();
+	TSubclassOf<ABoss1Clone> Clone;
 	
 	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
 	bool CanPatternClone = true;
@@ -223,6 +222,18 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Clone")
 	float PatternClonePersistentTime = 5.0f;
+
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* LandingSound;
+
+	UPROPERTY(EditAnywhere, Category="Effects")
+	class UParticleSystem* LandingEffect;
+
+	UPROPERTY(EditAnywhere, Category="Effects")
+	class UParticleSystem* NeutralizeFailEffect;
+
+	UPROPERTY(EditAnywhere, Category="Effects")
+	class UParticleSystem* RushHitEffect;
 	
 	UFUNCTION()
 	FVector GetTargetDirection() const;
@@ -244,6 +255,7 @@ public:
 	
 
 private:
+	void Die();
 	void CheckState();
 	void IdleTransition();
 	void StartJumping();

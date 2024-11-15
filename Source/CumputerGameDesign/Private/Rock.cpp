@@ -12,7 +12,7 @@ ARock::ARock()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	
 	Tags.Add("Rock");
 	
 	Sphere = CreateDefaultSubobject<USphereComponent>("Sphere");
@@ -23,13 +23,14 @@ ARock::ARock()
 	RootComponent = Sphere;
 	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("/Script/Engine.StaticMesh'/Game/StarterContent/Shapes/Shape_Sphere.Shape_Sphere'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshAsset(TEXT("/Script/Engine.StaticMesh'/Game/Fab/boulder/boulder_a04.boulder_a04'"));
 	if (MeshAsset.Succeeded())
 	{
 		Mesh->SetStaticMesh(MeshAsset.Object);
 		Mesh->SetupAttachment(RootComponent);
 	}
 	Mesh->SetRelativeLocation(FVector(0, 0, -50));
+	Mesh->SetRelativeScale3D(FVector(0.2f, 0.2f, 0.2f));
 }
 
 // Called when the game starts or when spawned

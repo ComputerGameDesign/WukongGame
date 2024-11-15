@@ -11,7 +11,7 @@ ARock2::ARock2()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	Sphere->SetRelativeScale3D(FVector(2.5, 2.5, 2.5));
-	Damage = 20;
+	Damage = 30;
 }
 
 // Called when the game starts or when spawned

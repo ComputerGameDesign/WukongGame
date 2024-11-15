@@ -6,7 +6,10 @@
 #include "EngineUtils.h"
 #include "MainCharacter.h"
 #include "Components/CapsuleComponent.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Particles/ParticleSystem.h"
+	
 // Sets default values
 ABoss1::ABoss1()
 {
@@ -14,6 +17,8 @@ ABoss1::ABoss1()
 	PrimaryActorTick.bCanEverTick = true;
 
 	Tags.Add(FName("Boss"));
+
+	Clone = ABoss1Clone::StaticClass();
 	
 	GetCapsuleComponent()->SetCapsuleHalfHeight(96.0f);
 	GetCapsuleComponent()->SetRelativeScale3D(FVector(1.75f, 1.75f, 1.75f));
@@ -29,7 +34,13 @@ ABoss1::ABoss1()
 	WeaponCollider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WeaponCollider"));
 	WeaponCollider->SetupAttachment(RootComponent);
 	WeaponCollider->SetCapsuleSize(5.0f, 120.0f);
-}	
+
+	LandingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/shake_Cue.shake_Cue'"));
+
+	LandingEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_Radius.p_GroundSlam_Radius'"));
+	NeutralizeFailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_Core_Destroyed_MainBlast.P_Core_Destroyed_MainBlast'"));
+	RushHitEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_StaffImpact.p_GroundSlam_StaffImpact'"));
+}
 
 // Called when the game starts or when spawned
 void ABoss1::BeginPlay()
@@ -122,12 +133,34 @@ void ABoss1::SetCoolTime(bool &CanValue, const float CoolTime) const
 
 void ABoss1::TakeDamage(float Damage)
 {
-	if (State == EBossState::Groggy)
-		Damage *= GroggyDamageMultiplier;
+	if (State != EBossState::PatternCloning)
+	{
+		if (State == EBossState::Groggy)
+			Damage *= GroggyDamageMultiplier;
 
-	Shield = FMath::Max(Shield - Damage, 0.0f);
-	Damage = FMath::Max(Damage - Shield, 0.0f);
-	Hp = FMath::Max(Hp - Damage, 0.0f);
+		Shield = FMath::Max(Shield - Damage, 0.0f);
+		Damage = FMath::Max(Damage - Shield, 0.0f);
+		Hp = FMath::Max(Hp - Damage, 0.0f);
+
+		if (Hp <= 0)
+		{
+			Die();
+		}
+	}
+}
+
+void ABoss1::Die()
+{
+	State = EBossState::Die;
+	GetWorldTimerManager().ClearTimer(SmoothTimer);
+	GetWorldTimerManager().ClearTimer(PatternTimer);
+	
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		[&]() -> void { Destroy(); },
+		3.0f,
+		false);
 }
 
 void ABoss1::CheckState()
@@ -227,9 +260,8 @@ void ABoss1::IdleTransition()
 void ABoss1::StartGroggy()
 {
 	State = EBossState::Groggy;
-	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
-		TimerHandle,
+		PatternTimer,
 		[&]() -> void { State = EBossState::Idle; },
 		GroggyPersistenceTime,
 		false);
@@ -242,6 +274,7 @@ void ABoss1::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UP
 	{
 		if (State == EBossState::Rushing)
 		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), RushHitEffect, Hit.Location, FRotationMatrix::MakeFromX(Hit.Normal).Rotator());
 			if (OtherActor->ActorHasTag(FName("Wall")))
 			{
 				StartGroggy();
