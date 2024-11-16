@@ -2,6 +2,8 @@
 
 #include "MainCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 void ABoss1::StartAttack()
 {
@@ -55,6 +57,7 @@ void ABoss1::AttackMeleeOnce()
 {
 	State = EBossState::Attack;
 	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
+	UGameplayStatics::PlaySoundAtLocation(this, MeleeAttackSound, GetActorLocation());
 	
 	GetWorldTimerManager().SetTimer(
 		PatternTimer,

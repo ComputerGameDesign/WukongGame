@@ -10,6 +10,7 @@ void UMainCharacterAnim::NativeUpdateAnimation(float DeltaSeconds)
 {
 	if (const AMainCharacter* Player = Cast<AMainCharacter>(TryGetPawnOwner()))
 	{
+		IsJogging = IsMoving();
 		IsJumping = Player->GetCharacterMovement()->IsFalling();
 		IsShooting = Player->IsShoot || Player->IsShootAll;
 		IsReloading = Player->IsReloading;

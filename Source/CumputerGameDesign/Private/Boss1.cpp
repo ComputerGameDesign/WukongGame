@@ -6,6 +6,7 @@
 #include "EngineUtils.h"
 #include "MainCharacter.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystem.h"
@@ -21,6 +22,7 @@ ABoss1::ABoss1()
 	Clone = ABoss1Clone::StaticClass();
 	
 	GetCapsuleComponent()->SetCapsuleHalfHeight(96.0f);
+	GetCapsuleComponent()->SetCapsuleRadius(40.0f);
 	GetCapsuleComponent()->SetRelativeScale3D(FVector(1.75f, 1.75f, 1.75f));
 	
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("/Script/Engine.SkeletalMesh'/Game/ParagonSunWukong/Characters/Heroes/Wukong/Meshes/Wukong.Wukong'"));
@@ -36,6 +38,8 @@ ABoss1::ABoss1()
 	WeaponCollider->SetCapsuleSize(5.0f, 120.0f);
 
 	LandingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/shake_Cue.shake_Cue'"));
+	MeleeAttackSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/swing_whoosh-weapon.swing_whoosh-weapon'"));
+	RockThrowSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/near-miss-swing-whoosh-3-233426_Cue.near-miss-swing-whoosh-3-233426_Cue'"));
 
 	LandingEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_Radius.p_GroundSlam_Radius'"));
 	NeutralizeFailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_Core_Destroyed_MainBlast.P_Core_Destroyed_MainBlast'"));
@@ -59,6 +63,10 @@ void ABoss1::BeginPlay()
 
 	SetActorEnableCollision(true);
 	Hp = MaxHp;
+
+	State = EBossState::Spawn;
+
+	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
 }
 
 // Called every frame
@@ -133,7 +141,7 @@ void ABoss1::SetCoolTime(bool &CanValue, const float CoolTime) const
 
 void ABoss1::TakeDamage(float Damage)
 {
-	if (State != EBossState::PatternCloning)
+	if (State != EBossState::PatternCloning && State != EBossState::Spawn)
 	{
 		if (State == EBossState::Groggy)
 			Damage *= GroggyDamageMultiplier;
@@ -146,6 +154,19 @@ void ABoss1::TakeDamage(float Damage)
 		{
 			Die();
 		}
+	}
+}
+
+void ABoss1::Spawning()
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		State = EBossState::Casting;
+		GetWorldTimerManager().SetTimer(
+		PatternTimer,
+		[&]() -> void { State = EBossState::Idle; },
+		SpawningTime,
+		false);
 	}
 }
 
@@ -167,6 +188,10 @@ void ABoss1::CheckState()
 {
 	switch (State)
 	{
+	case EBossState::Spawn:
+		Spawning();
+		break;
+		
 	case EBossState::Idle:
 		IdleTransition();
 		break;

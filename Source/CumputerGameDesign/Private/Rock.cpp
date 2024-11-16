@@ -6,6 +6,8 @@
 #include "MainCharacter.h"
 #include "MainGameModeBase.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values
 ARock::ARock()
@@ -54,11 +56,14 @@ void ARock::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimit
 	{
 		if (OtherActor->ActorHasTag(FName("Floor")))
 		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), BreakSound, GetActorLocation());
 			OnFloorHit();
 		}
 		else if (OtherActor->ActorHasTag(FName("Player")))
 		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), BreakSound, GetActorLocation());
 			Cast<AMainCharacter>(OtherActor)->TakeDamage(Damage);
+			OnFloorHit();
 		}
 	}
 }

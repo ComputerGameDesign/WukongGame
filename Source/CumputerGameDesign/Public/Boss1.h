@@ -11,6 +11,7 @@
 UENUM()
 enum class EBossState : uint8
 {
+	Spawn UMETA(DisplayName = "Spawn"),
 	Idle UMETA(DisplayName = "Idle"),
 	Casting UMETA(DisplayName = "Casting"),
 	Jumping UMETA(DisplayName = "Jumping"),
@@ -54,7 +55,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category=State)
 	mutable EBossState State = EBossState::Idle;
-
+	
 	UPROPERTY(VisibleAnywhere, Category=State)
 	bool CanJumpToPlayer = true;
 	
@@ -63,6 +64,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category=State)
 	bool CanAttack = true;
+	
+	UPROPERTY(EditAnywhere, Category=GamePlay)
+	float SpawningTime = 3.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	float MaxHp = 200.0f;
@@ -226,6 +230,12 @@ public:
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* LandingSound;
 
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* MeleeAttackSound;
+
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* RockThrowSound;
+
 	UPROPERTY(EditAnywhere, Category="Effects")
 	class UParticleSystem* LandingEffect;
 
@@ -255,6 +265,7 @@ public:
 	
 
 private:
+	void Spawning();
 	void Die();
 	void CheckState();
 	void IdleTransition();

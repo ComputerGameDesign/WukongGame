@@ -29,7 +29,10 @@ ABoss1Clone::ABoss1Clone()
 	SkeletalMesh->SetRelativeLocation(FVector(8, 0, -96));
 	SkeletalMesh->SetRelativeRotation(FRotator(0, -90, 0));
 	SkeletalMesh->SetupAttachment(CapsuleComponent);
-
+	
+	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimBlueprint(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP_Boss1Clone.ABP_Boss1Clone'"));
+	if (AnimBlueprint.Succeeded()) SkeletalMesh->SetAnimInstanceClass(AnimBlueprint.Object->GeneratedClass);
+	
 	SpawnEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/Ultimate/FX/p_CloneSpawn.p_CloneSpawn'"));
 	DespawnEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/Ultimate/FX/p_CloneDespawn.p_CloneDespawn'"));
 }

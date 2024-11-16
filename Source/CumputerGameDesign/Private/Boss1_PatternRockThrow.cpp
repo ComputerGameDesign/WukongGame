@@ -3,6 +3,8 @@
 #include "MainCharacter.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 void ABoss1::StartPatternRockThrowJumping()
 {
@@ -54,10 +56,11 @@ void ABoss1::StartPatternRockThrow()
 				StartPatternRockThrowLanding();
 			}
 			
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), RockThrowSound, GetActorLocation());
 			PatternRockThrowNowRockCount++;
-			auto TempRock = GetWorld()->SpawnActor<ARock1>(Rock, GetActorLocation() + FVector(0, 0, 100), FRotator::ZeroRotator);
-			auto TargetLocation = GetTargetDirection();
-			TempRock->Sphere->AddImpulse(TargetLocation * 10000);
+			const auto TempRock = GetWorld()->SpawnActor<ARock1>(Rock, GetActorLocation() + FVector(0, 0, 100), FRotator::ZeroRotator);
+			const auto Direction = GetTargetDirection() - FVector(0, 0, 400);
+			TempRock->Sphere->AddImpulse(Direction * 10000);
 		},
 		1.0f,
 		true);

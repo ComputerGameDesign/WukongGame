@@ -83,7 +83,7 @@ public:
 	float ShootDamage = 1.0f;
 
 	UPROPERTY(EditAnywhere, Category = GamePlay)
-	float ShootDelay = 0.5f;
+	float ShootDelay = 0.4f;
 	
 	UPROPERTY(EditAnywhere, Category = GamePlay)
 	bool IsShoot = false;
@@ -118,11 +118,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ShootTrailEffect;
 
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* DamagedEffect;
+	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* ShootSound;
+	USoundWave* ShootSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* ReloadSound;
+	USoundWave* ReloadSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundCue* PainSound;

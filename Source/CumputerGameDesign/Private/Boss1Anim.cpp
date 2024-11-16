@@ -13,6 +13,8 @@ void UBoss1Anim::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (const ABoss1* Boss = Cast<ABoss1>(TryGetPawnOwner()))
 	{
+		IsSpawning = Boss->State == EBossState::Spawn;
+		
 		IsJumping = Boss->State == EBossState::Jumping ||
 					Boss->State == EBossState::PatternNeutralizeJumping ||
 					Boss->State == EBossState::PatternRockThrowJumping ||

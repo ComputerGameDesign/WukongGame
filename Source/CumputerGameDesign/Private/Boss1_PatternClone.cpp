@@ -2,7 +2,10 @@
 #include "Boss1Clone.h"
 
 #include "MainCharacter.h"
+#include "MainGameModeBase.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameModeBase.h"
 
 void ABoss1::StartPatternCloneJumping()
 {
@@ -75,13 +78,14 @@ void ABoss1::StartPatternClone()
 
 	for (int32 i = 0; i < PatternCloneCount; i++)
 	{
-		if (auto c= GetWorld()->SpawnActor<ABoss1Clone>(Clone, GetActorLocation(), FRotationMatrix::MakeFromX(PatternClonePositions[i]).Rotator()))
+		if (auto c= GetWorld()->SpawnActor<ABoss1Clone>(Clone, GetActorLocation(), FRotationMatrix::MakeFromX(-PatternClonePositions[i]).Rotator()))
 		{
 			c->PersistentTime = PatternClonePersistentTime;
 			c->SetMove(PatternClonePositions[i]);
 		}
 	}
-	
+
+	Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->SetBgm2();
 	GetWorldTimerManager().SetTimer(
 		PatternTimer,
 		[&]() -> void { State = EBossState::Idle; },

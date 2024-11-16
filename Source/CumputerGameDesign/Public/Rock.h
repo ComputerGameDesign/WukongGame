@@ -38,6 +38,9 @@ public:
 	UPROPERTY(EditAnywhere, Category=Damage)
 	TSubclassOf<ARock> MiniRock;
 
+	UPROPERTY(EditAnywhere, Category=Sound)
+	class USoundCue* BreakSound;
+
 protected:
 	virtual void OnFloorHit();
 

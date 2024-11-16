@@ -16,7 +16,10 @@ class CUMPUTERGAMEDESIGN_API UMainCharacterAnim : public UAnimInstance
 	
 public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsJogging = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsJumping = false;
 

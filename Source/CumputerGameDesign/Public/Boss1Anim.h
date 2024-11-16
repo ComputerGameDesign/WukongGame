@@ -17,7 +17,10 @@ class CUMPUTERGAMEDESIGN_API UBoss1Anim : public UAnimInstance
 
 public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsSpawning = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool IsJumping = false;
 

@@ -19,6 +19,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Sound/SoundWave.h"
 #include "Sound/SoundCue.h"
 
 class USplineComponent;
@@ -76,9 +77,10 @@ AMainCharacter::AMainCharacter()
 
 	ShootEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Primary/FX/P_Revenant_Primary_MuzzleFlash.P_Revenant_Primary_MuzzleFlash'"));
 	ShootTrailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_SingleTargetCore_TargetBeam.P_SingleTargetCore_TargetBeam'"));
+	DamagedEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Obliterate/FX/P_Revenant_Obliterate_CamFX.P_Revenant_Obliterate_CamFX'"));
 	
-	ShootSound = LoadObject<USoundBase>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Single_Fire.Revenant_Gun_Single_Fire'"));
-	ReloadSound = LoadObject<USoundBase>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Reload.Revenant_Gun_Reload'"));
+	ShootSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Single_Fire.Revenant_Gun_Single_Fire'"));
+	ReloadSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Reload.Revenant_Gun_Reload'"));
 	PainSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_PainHeavy.Revenant_Effort_PainHeavy'"));
 	JumpSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_Jump.Revenant_Effort_Jump'"));
 	MoveSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/SmallSoundKit/SSKCue/FootstepsCue/S_Concrete_Mono_Cue.S_Concrete_Mono_Cue'"));
@@ -308,6 +310,15 @@ void AMainCharacter::TakeDamage(const float Damage)
 	if (!IsImmune)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), PainSound, GetActorLocation());
+		UGameplayStatics::SpawnEmitterAttached(
+			DamagedEffect,
+			CameraComp,       // 캐릭터의 스켈레탈 메시
+			FName(""), // 소켓 이름
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
 		
 		Hp = FMath::Max(Hp - Damage, 0.0f);
 

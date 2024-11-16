@@ -27,6 +27,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Boss)
 	class ABoss1* Boss;
 
+	UPROPERTY(EditAnywhere,	BlueprintReadWrite, Category="Bgm")
+	class UAudioComponent* BgmComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bgm")
+	class USoundWave* Bgm1;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bgm")
+	class USoundWave* Bgm2;
+	
 	UFUNCTION()
 	void SpawnBoss();
+
+	UFUNCTION()
+	void SetBgm1() const;
+
+	UFUNCTION()
+	void SetBgm2() const;
 };

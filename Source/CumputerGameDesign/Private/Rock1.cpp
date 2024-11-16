@@ -5,6 +5,7 @@
 
 #include "Rock2.h"
 #include "Components/SphereComponent.h"
+#include "Sound//SoundCue.h"
 
 // Sets default values
 ARock1::ARock1()
@@ -15,6 +16,8 @@ ARock1::ARock1()
 	Sphere->SetRelativeScale3D(FVector(5, 5, 5));
 	Damage = 50;
 	MiniRock = ARock2::StaticClass();
+
+	BreakSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/rock-break-hard-184891_Cue.rock-break-hard-184891_Cue'"));
 }
 
 // Called when the game starts or when spawned
