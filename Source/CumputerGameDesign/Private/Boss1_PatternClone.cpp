@@ -6,6 +6,8 @@
 #include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/GameModeBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 void ABoss1::StartPatternCloneJumping()
 {
@@ -75,7 +77,9 @@ void ABoss1::StartPatternClone()
 {
 	State = EBossState::PatternCloning;
 	CanPatternClone = false;
-
+	
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), CloningSound, GetActorLocation());
+	
 	for (int32 i = 0; i < PatternCloneCount; i++)
 	{
 		if (auto c= GetWorld()->SpawnActor<ABoss1Clone>(Clone, GetActorLocation(), FRotationMatrix::MakeFromX(-PatternClonePositions[i]).Rotator()))

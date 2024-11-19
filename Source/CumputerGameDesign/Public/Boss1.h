@@ -228,6 +228,12 @@ public:
 	float PatternClonePersistentTime = 5.0f;
 
 	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* SpawnSound;
+
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* JumpingSound;
+	
+	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* LandingSound;
 
 	UPROPERTY(EditAnywhere, Category="Sounds")
@@ -235,6 +241,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* RockThrowSound;
+
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* CloningSound;
 
 	UPROPERTY(EditAnywhere, Category="Effects")
 	class UParticleSystem* LandingEffect;

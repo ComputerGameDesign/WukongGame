@@ -26,6 +26,7 @@ void ABoss1::StartJumping()
 		PatternTimer,
 		[&]() -> void
 		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpingSound, GetActorLocation());
 			GetCharacterMovement()->GravityScale = 0;
 			State = EBossState::Jumping;
 		},

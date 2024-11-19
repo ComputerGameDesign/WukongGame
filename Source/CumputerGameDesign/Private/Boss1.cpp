@@ -37,10 +37,13 @@ ABoss1::ABoss1()
 	WeaponCollider->SetupAttachment(RootComponent);
 	WeaponCollider->SetCapsuleSize(5.0f, 120.0f);
 
+	SpawnSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster_roar_Cue.monster_roar_Cue'"));
+	JumpingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/jumpland_Cue.jumpland_Cue'"));
 	LandingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/shake_Cue.shake_Cue'"));
 	MeleeAttackSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/swing_whoosh-weapon.swing_whoosh-weapon'"));
 	RockThrowSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/near-miss-swing-whoosh-3-233426_Cue.near-miss-swing-whoosh-3-233426_Cue'"));
-
+	CloningSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monkey.monkey'"));
+	
 	LandingEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_Radius.p_GroundSlam_Radius'"));
 	NeutralizeFailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_Core_Destroyed_MainBlast.P_Core_Destroyed_MainBlast'"));
 	RushHitEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_StaffImpact.p_GroundSlam_StaffImpact'"));
@@ -161,6 +164,7 @@ void ABoss1::Spawning()
 {
 	if (!GetCharacterMovement()->IsFalling())
 	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SpawnSound, GetActorLocation());
 		State = EBossState::Casting;
 		GetWorldTimerManager().SetTimer(
 		PatternTimer,
