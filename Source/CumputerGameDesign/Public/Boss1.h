@@ -238,7 +238,19 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* MeleeAttackSound;
+	
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* RushStartSound;
 
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* NeutralizeSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class UAudioComponent* NeutralizeAudioComp;
+	
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* NeutralizeSuccessSound;
+	
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* RockThrowSound;
 

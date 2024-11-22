@@ -80,14 +80,17 @@ AMainCharacter::AMainCharacter()
 	DamagedEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Obliterate/FX/P_Revenant_Obliterate_CamFX.P_Revenant_Obliterate_CamFX'"));
 	
 	ShootSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Single_Fire.Revenant_Gun_Single_Fire'"));
+	ShootSoundNoBullet = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/rifle-clip-empty-98832.rifle-clip-empty-98832'"));
 	ReloadSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Reload.Revenant_Gun_Reload'"));
 	PainSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_PainHeavy.Revenant_Effort_PainHeavy'"));
 	JumpSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_Jump.Revenant_Effort_Jump'"));
 	MoveSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/SmallSoundKit/SSKCue/FootstepsCue/S_Concrete_Mono_Cue.S_Concrete_Mono_Cue'"));
+	DashSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/evade_dash.evade_dash'"));
 	DieSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_Death.Revenant_Effort_Death'"));
 	
 	MoveAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComp"));
 	MoveAudioComp->SetSound(MoveSound);
+	MoveAudioComp->SetAutoActivate(false);
 	MoveAudioComp->SetupAttachment(RootComponent);
 }
 
@@ -167,6 +170,7 @@ void AMainCharacter::Dash(const struct FInputActionValue &inputValue)
 		const FVector DashDirection = FVector(CharacterVelocity.X, CharacterVelocity.Y, 0).GetSafeNormal();
 
 		IsDashing = true;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), DashSound, GetActorLocation());
 		GetWorldTimerManager().SetTimer(DashTimer, [&]() -> void { IsDashing = false; }, DashCoolTime, false);
 		LaunchCharacter(DashDirection * DashPower, true, false);
 	}
@@ -181,18 +185,25 @@ void AMainCharacter::View(const struct FInputActionValue &inputValue)
 
 void AMainCharacter::Shoot(const struct FInputActionValue &inputValue)
 {
-	if (NowBulletCount > 0 && !IsShoot && !IsShootAll && !IsReloading)
+	if (!IsShoot && !IsShootAll && !IsReloading)
 	{
-		IsShoot = true;
-		ShootOnce();
-		GetWorldTimerManager().SetTimer(
-			ShootTimer,
-			[&]() -> void
-			{
-				IsShoot = false;
-			},
-			ShootDelay,
-			false);
+		if (NowBulletCount > 0)
+		{
+			IsShoot = true;
+			ShootOnce();
+			GetWorldTimerManager().SetTimer(
+				ShootTimer,
+				[&]() -> void
+				{
+					IsShoot = false;
+				},
+				ShootDelay,
+				false);
+		}
+		else
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShootSoundNoBullet, GetActorLocation());
+		}
 	}
 }
 
@@ -255,22 +266,29 @@ void AMainCharacter::ShootOnce()
 
 void AMainCharacter::ShootAll(const struct FInputActionValue& inputValue)
 {
-	if (NowBulletCount > 0 && !IsShootAll && !IsReloading)
+	if (!IsShootAll && !IsReloading)
 	{
-		IsShootAll = true;
-		GetWorldTimerManager().SetTimer(
-			ShootAllTimer,
-			[&]() -> void
-			{
-				if (NowBulletCount <= 0)
+		if (NowBulletCount > 0)
+		{
+			IsShootAll = true;
+			GetWorldTimerManager().SetTimer(
+				ShootAllTimer,
+				[&]() -> void
 				{
-					IsShootAll = false;
-					GetWorldTimerManager().ClearTimer(ShootAllTimer);
-				}
-				ShootOnce();
-			},
-			ShootAllDelay,
-			true);
+					if (NowBulletCount <= 0)
+					{
+						IsShootAll = false;
+						GetWorldTimerManager().ClearTimer(ShootAllTimer);
+					}
+					ShootOnce();
+				},
+				ShootAllDelay,
+				true);
+		}
+		else
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShootSoundNoBullet, GetActorLocation());
+		}
 	}
 }
 

@@ -2,14 +2,20 @@
 
 #include "MainCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 void ABoss1::StartRushing()
 {
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), RushStartSound, GetActorLocation());
 	SetCoolTime(CanRush, RushCoolTime);
 	State = EBossState::RushTracing;
 	GetWorldTimerManager().SetTimer(
 		PatternTimer,
-		[&]() -> void { State = EBossState::Rushing; },
+		[&]() -> void
+		{
+			State = EBossState::Rushing;
+		},
 		RushTracingTime,
 		false);
 }

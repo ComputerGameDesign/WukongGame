@@ -1,8 +1,10 @@
 ﻿#include "Boss1.h"
 
 #include "MainCharacter.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 void ABoss1::StartPatternNeutralizeJumping()
 {
@@ -75,12 +77,14 @@ void ABoss1::StartPatternNeutralize()
 	Shield = PatternNeutralizeShields[NowPatternNeutralizeCount];
 	NowPatternNeutralizeCount++;
 	NowMaxShield = Shield;
+	NeutralizeAudioComp->Play();
 	GetWorldTimerManager().SetTimer(
 			PatternTimer,
 			[&]() -> void
 			{
 				Hp += Shield;
 				Shield = 0;
+				NeutralizeAudioComp->Stop();
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), NeutralizeFailEffect, GetActorLocation());
 				TargetPlayer->TakeDamage(PatternNeutralizeFailDamage);
 				State = EBossState::Idle;
@@ -93,6 +97,8 @@ void ABoss1::PatternNeutralize()
 {
 	if (Shield <= 0)
 	{
+		NeutralizeAudioComp->Stop();
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), NeutralizeSuccessSound, GetActorLocation());
 		GetWorldTimerManager().ClearTimer(PatternTimer);
 		State = EBossState::Groggy;
 		GetWorldTimerManager().SetTimer(

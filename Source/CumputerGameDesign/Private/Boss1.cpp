@@ -5,6 +5,7 @@
 
 #include "EngineUtils.h"
 #include "MainCharacter.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -37,12 +38,20 @@ ABoss1::ABoss1()
 	WeaponCollider->SetupAttachment(RootComponent);
 	WeaponCollider->SetCapsuleSize(5.0f, 120.0f);
 
-	SpawnSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster_roar_Cue.monster_roar_Cue'"));
+	SpawnSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster-roar-104049_Cue.monster-roar-104049_Cue'"));
 	JumpingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/jumpland_Cue.jumpland_Cue'"));
 	LandingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/shake_Cue.shake_Cue'"));
 	MeleeAttackSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/swing_whoosh-weapon.swing_whoosh-weapon'"));
+	RushStartSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster-growl-94644_Cue.monster-growl-94644_Cue'"));
+	NeutralizeSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/magic-chargeup-102051_Cue.magic-chargeup-102051_Cue'"));
+	NeutralizeSuccessSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/glass-shatter-3-100155_Cue.glass-shatter-3-100155_Cue'"));
 	RockThrowSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/near-miss-swing-whoosh-3-233426_Cue.near-miss-swing-whoosh-3-233426_Cue'"));
-	CloningSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monkey.monkey'"));
+	CloningSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/woosh-104586_Cue.woosh-104586_Cue'"));
+
+	NeutralizeAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComp"));
+	NeutralizeAudioComp->SetSound(NeutralizeSound);
+	NeutralizeAudioComp->SetAutoActivate(false);
+	NeutralizeAudioComp->SetupAttachment(RootComponent);
 	
 	LandingEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_Radius.p_GroundSlam_Radius'"));
 	NeutralizeFailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_Core_Destroyed_MainBlast.P_Core_Destroyed_MainBlast'"));

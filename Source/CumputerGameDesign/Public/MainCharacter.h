@@ -125,6 +125,9 @@ public:
 	USoundWave* ShootSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundWave* ShootSoundNoBullet;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundWave* ReloadSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
@@ -132,6 +135,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundCue* JumpSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundWave* DashSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	UAudioComponent* MoveAudioComp;
