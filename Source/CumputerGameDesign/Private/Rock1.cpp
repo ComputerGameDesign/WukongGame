@@ -6,6 +6,7 @@
 #include "Rock2.h"
 #include "Components/SphereComponent.h"
 #include "Sound//SoundCue.h"
+#include "Particles/ParticleSystem.h"
 
 // Sets default values
 ARock1::ARock1()
@@ -18,6 +19,7 @@ ARock1::ARock1()
 	MiniRock = ARock2::StaticClass();
 
 	BreakSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/rock-break-hard-184891_Cue.rock-break-hard-184891_Cue'"));
+	BreakEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_Radius.p_GroundSlam_Radius'"));
 }
 
 // Called when the game starts or when spawned
@@ -36,9 +38,10 @@ void ARock1::Tick(float DeltaTime)
 
 void ARock1::OnFloorHit()
 {
+	Super::OnFloorHit();
+	
 	auto MiniRock1 = GetWorld()->SpawnActor<ARock2>(MiniRock, GetActorLocation() + FVector(50, 50, 100), GetActorRotation());
 	auto MiniRock2 = GetWorld()->SpawnActor<ARock2>(MiniRock, GetActorLocation() + FVector(-50, -50, 100), GetActorRotation());
-
 	
 	MiniRock1->Sphere->AddImpulse(FVector(100000, 100000, 1500000));
 	MiniRock2->Sphere->AddImpulse(FVector(-100000, -100000, 1500000));

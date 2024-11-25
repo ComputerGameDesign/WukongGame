@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "MainGameModeBase.h"
 #include "Camera/CameraComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Components/AudioComponent.h"
@@ -54,9 +55,9 @@ AMainCharacter::AMainCharacter()
 	GetMesh()->SetRelativeLocation(FVector(10, 0, -108));
 	GetMesh()->SetRelativeRotation(FRotator(0, -90, 0));
 
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP_MainCharacter.ABP_MainCharacter'"));
-	if (AnimAsset.Succeeded()) GetMesh()->SetAnimInstanceClass(AnimAsset.Object->GeneratedClass);
-	
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimAsset(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP/ABP_MainCharacter.ABP_MainCharacter_C'"));
+	if (AnimAsset.Succeeded()) GetMesh()->SetAnimInstanceClass(AnimAsset.Class);
+
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> ImcPlayerAsset(TEXT("/Script/EnhancedInput.InputMappingContext'/Game/Inputs/IMC_Player.IMC_Player'"));
 	static ConstructorHelpers::FObjectFinder<UInputAction> IaMoveAsset(TEXT("/Script/EnhancedInput.InputAction'/Game/Inputs/IA_Move.IA_Move'"));
 	static ConstructorHelpers::FObjectFinder<UInputAction> IaJumpAction(TEXT("/Script/EnhancedInput.InputAction'/Game/Inputs/IA_Jump.IA_Jump'"));
@@ -77,9 +78,11 @@ AMainCharacter::AMainCharacter()
 
 	ShootEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Primary/FX/P_Revenant_Primary_MuzzleFlash.P_Revenant_Primary_MuzzleFlash'"));
 	ShootTrailEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonProps/FX/Particles/Core/P_SingleTargetCore_TargetBeam.P_SingleTargetCore_TargetBeam'"));
+	ShootHitEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Obliterate/FX/P_Revenant_Obliterate_Hit.P_Revenant_Obliterate_Hit'"));
 	DamagedEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonRevenant/FX/Particles/Revenant/Abilities/Obliterate/FX/P_Revenant_Obliterate_CamFX.P_Revenant_Obliterate_CamFX'"));
 	
 	ShootSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Single_Fire.Revenant_Gun_Single_Fire'"));
+	ShootHitSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/SmallSoundKit/SSKCue/DarkCue/Impact_Guts_Gore_01_Cue.Impact_Guts_Gore_01_Cue'"));
 	ShootSoundNoBullet = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/rifle-clip-empty-98832.rifle-clip-empty-98832'"));
 	ReloadSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Revenant_Gun_Reload.Revenant_Gun_Reload'"));
 	PainSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonRevenant/Audio/Cues/Revenant_Effort_PainHeavy.Revenant_Effort_PainHeavy'"));
@@ -110,6 +113,13 @@ void AMainCharacter::BeginPlay()
 	Hp = MaxHp;
 }
 
+void AMainCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+}
+
 // Called every frame
 void AMainCharacter::Tick(float DeltaTime)
 {
@@ -125,7 +135,6 @@ void AMainCharacter::Tick(float DeltaTime)
 			MoveAudioComp->Play();
 		}
 	}
-		DrawDebug();
 }
 
 // Called to bind functionality to input
@@ -135,7 +144,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	if (const auto PlayerInput = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		PlayerInput->BindAction(Ia_Move, ETriggerEvent::Triggered, this, &AMainCharacter::Move);
-		PlayerInput->BindAction(Ia_Jump, ETriggerEvent::Started, this, &AMainCharacter::Jump);
+		PlayerInput->BindAction(Ia_Jump, ETriggerEvent::Started, this, &AMainCharacter::JumpThis);
 		PlayerInput->BindAction(Ia_Dash, ETriggerEvent::Started, this, &AMainCharacter::Dash);
 		PlayerInput->BindAction(Ia_View, ETriggerEvent::Triggered, this, &AMainCharacter::View);
 		PlayerInput->BindAction(Ia_Shoot, ETriggerEvent::Started, this, &AMainCharacter::Shoot);
@@ -153,7 +162,7 @@ void AMainCharacter::Move(const struct FInputActionValue &inputValue)
 	MoveDirection.Normalize();
 }
 
-void AMainCharacter::Jump(const struct FInputActionValue &inputValue)
+void AMainCharacter::JumpThis(const struct FInputActionValue &inputValue)
 {
 	if (!IsDashing)
 	{
@@ -243,10 +252,19 @@ void AMainCharacter::ShootOnce()
 
 			Beam->SetBeamSourcePoint(0, FirePos, 0);
 			Beam->SetBeamTargetPoint(0, HitPos, 0);
+
+			UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShootHitSound, HitPos);
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),  // 현재 월드
+				ShootHitEffect,  // 사용할 파티클 시스템
+				HitPos,
+				FRotationMatrix::MakeFromX(HitPos - FirePos).Rotator()// 생성할 위치
+			);
+
 			
 			if (ABoss1* Boss = Cast<ABoss1>(HitResult.GetActor()))
 			{
-				Boss->TakeDamage(ShootDamage);
+				Boss->TakeDamageToThis(ShootDamage);
 			}
 
 			if (ABoss1Clone* Clone = Cast<ABoss1Clone>(HitResult.GetActor()))
@@ -321,11 +339,13 @@ void AMainCharacter::Die()
 		PlayerController->SetIgnoreLookInput(true);
 	}
 	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DieSound, GetActorLocation());
+	
+	Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->PlayerDie();
 }
 
-void AMainCharacter::TakeDamage(const float Damage)
+void AMainCharacter::TakeDamageToThis(const float Damage)
 {
-	if (!IsImmune)
+	if (!IsImmune && Hp > 0)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), PainSound, GetActorLocation());
 		UGameplayStatics::SpawnEmitterAttached(
@@ -362,12 +382,3 @@ void AMainCharacter::TakeDamage(const float Damage)
 		}
 	}
 }
-
-void AMainCharacter::DrawDebug() const
-{
-	FVector Start = GetMesh()->GetBoneLocation(FName("gun_pin"));
-	FVector ForwardVector = GetControlRotation().Vector();
-	FVector End = Start + (ForwardVector * 50.0f); // 1000 단위 거리까지 레이캐스트
-	DrawDebugDirectionalArrow(GetWorld(), Start, End, 50.0f, FColor::Red, false, -1, 0, 1.0f);
-}
-

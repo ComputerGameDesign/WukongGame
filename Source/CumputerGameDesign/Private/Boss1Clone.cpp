@@ -4,6 +4,7 @@
 #include "Boss1Clone.h"
 
 #include "Boss1.h"
+#include "MainGameModeBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
@@ -30,8 +31,8 @@ ABoss1Clone::ABoss1Clone()
 	SkeletalMesh->SetRelativeRotation(FRotator(0, -90, 0));
 	SkeletalMesh->SetupAttachment(CapsuleComponent);
 	
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimBlueprint(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP_Boss1Clone.ABP_Boss1Clone'"));
-	if (AnimBlueprint.Succeeded()) SkeletalMesh->SetAnimInstanceClass(AnimBlueprint.Object->GeneratedClass);
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBlueprint(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP/ABP_Boss1Clone.ABP_Boss1Clone_C'"));
+	if (AnimBlueprint.Succeeded()) SkeletalMesh->SetAnimInstanceClass(AnimBlueprint.Class);
 	
 	SpawnEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/Ultimate/FX/p_CloneSpawn.p_CloneSpawn'"));
 	DespawnEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/Ultimate/FX/p_CloneDespawn.p_CloneDespawn'"));
@@ -103,6 +104,7 @@ void ABoss1Clone::StartTimer()
 			Boss->CanPatternClone = false;
 			Boss->CanPatternRockThrow = false;
 			Boss->NowPatternNeutralizeCount = Boss->TotalPatternNeutralizeCount;
+			Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->BossClones.Add(Boss);
 			Destroy();
 		},
 		PersistentTime,

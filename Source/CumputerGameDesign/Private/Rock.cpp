@@ -56,13 +56,11 @@ void ARock::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimit
 	{
 		if (OtherActor->ActorHasTag(FName("Floor")))
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), BreakSound, GetActorLocation());
 			OnFloorHit();
 		}
 		else if (OtherActor->ActorHasTag(FName("Player")))
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), BreakSound, GetActorLocation());
-			Cast<AMainCharacter>(OtherActor)->TakeDamage(Damage);
+			Cast<AMainCharacter>(OtherActor)->TakeDamageToThis(Damage);
 			OnFloorHit();
 		}
 	}
@@ -70,5 +68,11 @@ void ARock::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimit
 
 void ARock::OnFloorHit()
 {
-	
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), BreakSound, GetActorLocation());
+	UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),  // 현재 월드
+			BreakEffect,  // 사용할 파티클 시스템
+			GetActorLocation(),
+			FRotator(-90, 0, 0)
+		);
 }

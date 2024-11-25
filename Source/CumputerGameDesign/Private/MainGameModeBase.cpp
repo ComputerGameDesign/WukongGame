@@ -5,12 +5,13 @@
 
 #include "Boss1.h"
 #include "MainCharacter.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Sound/SoundWave.h"
 
 AMainGameModeBase::AMainGameModeBase()
 {
-
 	BgmComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("BgmComp"));
 	BgmComponent->SetupAttachment(RootComponent);
 
@@ -23,8 +24,70 @@ void AMainGameModeBase::BeginPlay()
 	Super::BeginPlay();
 	
 	Player = Cast<AMainCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	FInputModeGameOnly InputMode;
+	GetWorld()->GetFirstPlayerController()->SetInputMode(InputMode);
+
 	SpawnBoss();
 	SetBgm1();
+
+	StartTime = GetWorld()->GetTimeSeconds();
+}
+
+void AMainGameModeBase::PlayerDie()
+{
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		[&]() -> void
+		{
+			auto PlayerController = GetWorld()->GetFirstPlayerController();
+			UGameplayStatics::SetGamePaused(this, true);
+			
+			// 마우스 보이게 하기
+			PlayerController->bShowMouseCursor = true;
+
+			// 마우스 입력 모드 설정 (UI와 상호작용하기 위해)
+			FInputModeUIOnly InputMode;
+			PlayerController->SetInputMode(InputMode);
+			
+			CreateWidget<UUserWidget>(PlayerController, FailWidget)->AddToViewport();
+		},
+		3.0f,
+		false
+	);
+}
+
+void AMainGameModeBase::BossDie()
+{
+	for (const auto Clone : BossClones)
+	{
+		if (Clone != nullptr)
+		{
+			Clone->Die();
+		}
+	}
+	
+	EndTime = GetWorld()->GetTimeSeconds();
+	
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		[&]() -> void
+		{
+			UGameplayStatics::SetGamePaused(this, true);
+			
+			auto PlayerController = GetWorld()->GetFirstPlayerController();
+			PlayerController->bShowMouseCursor = true;
+
+			// 마우스 입력 모드 설정 (UI와 상호작용하기 위해)
+			FInputModeUIOnly InputMode;
+			PlayerController->SetInputMode(InputMode);
+		
+			CreateWidget<UUserWidget>(PlayerController, SuccessWidget)->AddToViewport();
+		},
+		2.0f,
+		false
+	);
 }
 
 void AMainGameModeBase::SpawnBoss()
@@ -46,4 +109,10 @@ void AMainGameModeBase::SetBgm2() const
 {
 	BgmComponent->SetSound(Bgm2);
 	BgmComponent->Play();
+}
+
+FString AMainGameModeBase::GetClearTime() const
+{
+	int32 ClearTime = EndTime - StartTime;
+	return FString::Printf(TEXT("%02d:%02d"), ClearTime / 60, ClearTime % 60);
 }

@@ -41,6 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, Category=Sound)
 	class USoundCue* BreakSound;
 
+	UPROPERTY(EditAnywhere, Category=Effect)
+	class UParticleSystem* BreakEffect;
+
 protected:
 	virtual void OnFloorHit();
 

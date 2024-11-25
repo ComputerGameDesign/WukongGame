@@ -86,7 +86,7 @@ void ABoss1::StartPatternNeutralize()
 				Shield = 0;
 				NeutralizeAudioComp->Stop();
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), NeutralizeFailEffect, GetActorLocation());
-				TargetPlayer->TakeDamage(PatternNeutralizeFailDamage);
+				TargetPlayer->TakeDamageToThis(PatternNeutralizeFailDamage);
 				State = EBossState::Idle;
 			},
 			PatternNeutralizePersistentTime,

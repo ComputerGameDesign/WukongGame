@@ -22,6 +22,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -113,50 +114,56 @@ public:
 	bool IsDie = false;
 	
 	UPROPERTY(EditAnywhere, Category = "Effect")
-	UParticleSystem* ShootEffect;
+	class UParticleSystem* ShootEffect;
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
-	UParticleSystem* ShootTrailEffect;
-
+	class UParticleSystem* ShootTrailEffect;
+	
 	UPROPERTY(EditAnywhere, Category = "Effect")
-	UParticleSystem* DamagedEffect;
+	class UParticleSystem* ShootHitEffect;
+	
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	class UParticleSystem* DamagedEffect;
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundWave* ShootSound;
+	class USoundWave* ShootSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundWave* ShootSoundNoBullet;
-	
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundWave* ReloadSound;
+	class USoundCue* ShootHitSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundCue* PainSound;
+	class USoundWave* ShootSoundNoBullet;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundWave* ReloadSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundCue* JumpSound;
-	
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundWave* DashSound;
+	class USoundCue* PainSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	UAudioComponent* MoveAudioComp;
+	class USoundCue* JumpSound;
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundCue* MoveSound;
+	class USoundWave* DashSound;
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class UAudioComponent* MoveAudioComp;
 	
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundCue* DieSound;
+	class USoundCue* MoveSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundCue* DieSound;
 
 	UPROPERTY(VisibleInstanceOnly, Category = "Sound")
 	bool IsMoveSoundPlaying = false;
 	
 	UFUNCTION()
-	void TakeDamage(const float Damage);
+	void TakeDamageToThis(const float Damage);
 
 private:
 	void Move(const struct FInputActionValue &inputValue);
-	void Jump(const struct FInputActionValue &inputValue);
+	void JumpThis(const struct FInputActionValue &inputValue);
 	void Dash(const struct FInputActionValue &inputValue);
 	void View(const struct FInputActionValue &inputValue);
 	void Shoot(const struct FInputActionValue &inputValue);
@@ -170,6 +177,4 @@ private:
 	FTimerHandle ShootTimer;
 	FTimerHandle ShootAllTimer;
 	FVector MoveDirection;
-
-	void DrawDebug() const;
 };

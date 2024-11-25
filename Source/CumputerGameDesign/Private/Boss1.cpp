@@ -5,6 +5,8 @@
 
 #include "EngineUtils.h"
 #include "MainCharacter.h"
+#include "MainGameModeBase.h"
+#include "ShaderPrintParameters.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -31,8 +33,8 @@ ABoss1::ABoss1()
 	GetMesh()->SetRelativeLocation(FVector(8, 0, -96));
 	GetMesh()->SetRelativeRotation(FRotator(0, -90, 0));
 	
-	static ConstructorHelpers::FObjectFinder<UAnimBlueprint> AnimBlueprint(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP_Boss1.ABP_Boss1'"));
-	if (AnimBlueprint.Succeeded()) GetMesh()->SetAnimInstanceClass(AnimBlueprint.Object->GeneratedClass);
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBlueprint(TEXT("/Script/Engine.AnimBlueprint'/Game/ABP/ABP_Boss1.ABP_Boss1_C'"));
+	if (AnimBlueprint.Succeeded()) GetMesh()->SetAnimInstanceClass(AnimBlueprint.Class);
 	
 	WeaponCollider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WeaponCollider"));
 	WeaponCollider->SetupAttachment(RootComponent);
@@ -47,6 +49,7 @@ ABoss1::ABoss1()
 	NeutralizeSuccessSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/glass-shatter-3-100155_Cue.glass-shatter-3-100155_Cue'"));
 	RockThrowSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/near-miss-swing-whoosh-3-233426_Cue.near-miss-swing-whoosh-3-233426_Cue'"));
 	CloningSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/woosh-104586_Cue.woosh-104586_Cue'"));
+	DieSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonSunWukong/Audio/Cues/Wukong_Effort_Death.Wukong_Effort_Death'"));
 
 	NeutralizeAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComp"));
 	NeutralizeAudioComp->SetSound(NeutralizeSound);
@@ -79,6 +82,14 @@ void ABoss1::BeginPlay()
 	State = EBossState::Spawn;
 
 	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
+}
+
+void ABoss1::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	GetWorld()->GetTimerManager().ClearTimer(SmoothTimer);
+	GetWorld()->GetTimerManager().ClearTimer(PatternTimer);
 }
 
 // Called every frame
@@ -135,7 +146,7 @@ void ABoss1::SetActorRotationSmoothOnce(const FRotator& EndRotation, const float
 {
 	const FRotator CurrentRotation = GetActorRotation();
 	const FRotator NewRotation = FMath::RInterpTo(CurrentRotation, EndRotation, DeltaTime, InterpSpeed);
-	        
+        
 	SetActorRotation(NewRotation);
 }
 
@@ -151,7 +162,7 @@ void ABoss1::SetCoolTime(bool &CanValue, const float CoolTime) const
 		false);
 }
 
-void ABoss1::TakeDamage(float Damage)
+void ABoss1::TakeDamageToThis(float Damage)
 {
 	if (State != EBossState::PatternCloning && State != EBossState::Spawn)
 	{
@@ -188,6 +199,13 @@ void ABoss1::Die()
 	State = EBossState::Die;
 	GetWorldTimerManager().ClearTimer(SmoothTimer);
 	GetWorldTimerManager().ClearTimer(PatternTimer);
+
+	if (this == Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->Boss)
+	{
+		Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->BossDie();
+	}
+	
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DieSound, GetActorLocation());
 	
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(
@@ -319,13 +337,13 @@ void ABoss1::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UP
 			}
 			else if (OtherActor->ActorHasTag(FName("Player")))
 			{
-				TargetPlayer->TakeDamage(RushDamage);
+				TargetPlayer->TakeDamageToThis(RushDamage);
 				State = EBossState::Idle;
 			}
 		}
 		else if (State == EBossState::Landing && OtherActor->ActorHasTag(FName("Player")))
 		{
-			TargetPlayer->TakeDamage(JumpDamage);
+			TargetPlayer->TakeDamageToThis(JumpDamage);
 		}
 	}
 }
@@ -336,36 +354,8 @@ void ABoss1::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	{
 		if (State == EBossState::Attack && OtherActor->ActorHasTag(FName("Player")))
 		{
-			TargetPlayer->TakeDamage(AttackDamage);
+			TargetPlayer->TakeDamageToThis(AttackDamage);
 			UE_LOG(LogTemp, Warning, TEXT("Damage"))
 		}
 	}
-}
-
-void ABoss1::DrawDebug() const
-{/*
-	FColor color;
-	if (GetTargetDirection().Size() > JumpDistanceThreshold)
-		color = FColor::Red;
-	else
-		color = FColor::Green;
-	
-	DrawDebugLine(GetWorld(), GetActorLocation(), TargetPlayer->GetActorLocation(), color, false, -1, 0, 1.0f);
-	
-	DrawDebugSphere(GetWorld(), GetActorLocation(), AttackDistanceThreshold, 12, FColor::Red, false, -1, 0, 1.0f);
-	DrawDebugSphere(GetWorld(), GetActorLocation(), JumpDistanceThreshold, 12, FColor::Green, false, -1, 0, 1.0f);
-	DrawDebugCapsule(
-		GetWorld(),
-		WeaponCollider->GetComponentLocation(),
-		WeaponCollider->GetScaledCapsuleHalfHeight(),
-		WeaponCollider->GetScaledCapsuleRadius(),
-		WeaponCollider->GetComponentRotation().Quaternion(),
-		FColor::Yellow,
-		false,
-		-1,
-		0,
-		1.0f);
-
-	
-	DrawDebugSphere(GetWorld(), JumpTargetPosition, 500, 12, FColor::Blue, false, -1, 0, 1.0f);*/
 }

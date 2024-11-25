@@ -42,6 +42,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
@@ -257,6 +258,9 @@ public:
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* CloningSound;
 
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* DieSound;
+
 	UPROPERTY(EditAnywhere, Category="Effects")
 	class UParticleSystem* LandingEffect;
 
@@ -282,12 +286,13 @@ public:
 	void SetCoolTime(bool &CanValue, float CoolTime) const;
 
 	UFUNCTION()
-	void TakeDamage(float Damage);
-	
+	void TakeDamageToThis(float Damage);
+
+	UFUNCTION()
+	void Die();
 
 private:
 	void Spawning();
-	void Die();
 	void CheckState();
 	void IdleTransition();
 	void StartJumping();
@@ -324,8 +329,6 @@ private:
 
 	UFUNCTION()
 	void OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	
-	void DrawDebug() const;
 	
 	FTimerHandle SmoothTimer;
 	FTimerHandle PatternTimer;

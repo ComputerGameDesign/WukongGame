@@ -4,6 +4,7 @@
 #include "Rock2.h"
 #include "Components/SphereComponent.h"
 #include "Sound/SoundCue.h"
+#include "Particles/ParticleSystem.h"
 
 // Sets default values
 ARock2::ARock2()
@@ -15,6 +16,7 @@ ARock2::ARock2()
 	Damage = 30;
 
 	BreakSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/small-rock-break-194553_Cue.small-rock-break-194553_Cue'"));
+	BreakEffect = LoadObject<UParticleSystem>(nullptr, TEXT("/Script/Engine.ParticleSystem'/Game/ParagonSunWukong/FX/Particles/Wukong/Abilities/DoubleJump/FX/p_GroundSlam_Radius.p_GroundSlam_Radius'"));
 }
 
 // Called when the game starts or when spawned
@@ -33,6 +35,7 @@ void ARock2::Tick(float DeltaTime)
 
 void ARock2::OnFloorHit()
 {
+	Super::OnFloorHit();
 	Destroy();
 }
 

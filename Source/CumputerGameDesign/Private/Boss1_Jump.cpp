@@ -84,7 +84,7 @@ void ABoss1::Landing()
 		auto Player = Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->Player;
 		if (!Player->GetCharacterMovement()->IsFalling())
 		{
-			Player->TakeDamage(JumpDamage);
+			Player->TakeDamageToThis(JumpDamage);
 		}
 
 		State = EBossState::Casting;
