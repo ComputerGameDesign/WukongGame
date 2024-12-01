@@ -17,11 +17,15 @@ AMainGameModeBase::AMainGameModeBase()
 
 	Bgm1 = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Thunder-Unison-Action-Dramatic-Epic-Music-chosic_com_.Thunder-Unison-Action-Dramatic-Epic-Music-chosic_com_'"));
 	Bgm2 = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/Executioner_chosic_com_.Executioner_chosic_com_'"));
+	ClearSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/epic-cinematic-music-109252.epic-cinematic-music-109252'"));
+	YouDiedSound = LoadObject<USoundWave>(nullptr, TEXT("/Script/Engine.SoundWave'/Game/Sounds/tubular-bell-of-death-89485.tubular-bell-of-death-89485'"));
 }
 
 void AMainGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeCounts();
 	
 	Player = Cast<AMainCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	FInputModeGameOnly InputMode;
@@ -40,13 +44,12 @@ void AMainGameModeBase::PlayerDie()
 		TimerHandle,
 		[&]() -> void
 		{
-			auto PlayerController = GetWorld()->GetFirstPlayerController();
+			UGameplayStatics::PlaySound2D(this, YouDiedSound);
 			UGameplayStatics::SetGamePaused(this, true);
 			
-			// 마우스 보이게 하기
+			auto PlayerController = GetWorld()->GetFirstPlayerController();
+			
 			PlayerController->bShowMouseCursor = true;
-
-			// 마우스 입력 모드 설정 (UI와 상호작용하기 위해)
 			FInputModeUIOnly InputMode;
 			PlayerController->SetInputMode(InputMode);
 			
@@ -74,6 +77,7 @@ void AMainGameModeBase::BossDie()
 		TimerHandle,
 		[&]() -> void
 		{
+			UGameplayStatics::PlaySound2D(this, ClearSound);
 			UGameplayStatics::SetGamePaused(this, true);
 			
 			auto PlayerController = GetWorld()->GetFirstPlayerController();
@@ -93,9 +97,6 @@ void AMainGameModeBase::BossDie()
 void AMainGameModeBase::SpawnBoss()
 {
 	Boss = GetWorld()->SpawnActor<ABoss1>(FVector(0, 0, 1000), FRotator(0, 0, 0));
-	//Boss = GetWorld()->SpawnActor<ABoss1>(FVector(1000, 1000, 1000), FRotator(0, 0, 0));
-	//Boss->GetCharacterMovement()->Velocity = FVector(1000, 1000, 0);
-	//UE_LOG(LogTemp, Warning, TEXT("%f"), Boss->GetCharacterMovement()->Ph);
 }
 
 void AMainGameModeBase::SetBgm1() const
@@ -104,15 +105,27 @@ void AMainGameModeBase::SetBgm1() const
 	BgmComponent->Play();
 }
 
-
 void AMainGameModeBase::SetBgm2() const
 {
 	BgmComponent->SetSound(Bgm2);
 	BgmComponent->Play();
 }
 
+void AMainGameModeBase::InitializeCounts()
+{
+	HitCount = 0;
+	ShootCount = 0;
+	RushCount = 0;
+	JumpCount = 0;
+}
+
 FString AMainGameModeBase::GetClearTime() const
 {
 	int32 ClearTime = EndTime - StartTime;
 	return FString::Printf(TEXT("%02d:%02d"), ClearTime / 60, ClearTime % 60);
+}
+
+FString AMainGameModeBase::GetHitRateString() const
+{
+	return FString::Printf(TEXT("%.2f%%"), 100.0f * HitCount / ShootCount);
 }

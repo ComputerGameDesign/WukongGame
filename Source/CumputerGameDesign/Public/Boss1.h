@@ -139,7 +139,7 @@ public:
 	float AttackFinishDelay = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category="Gameplay|Attack")
-	float AttackDamage = 10.0f;
+	float AttackDamage = 20.0f;
 
 	UPROPERTY(VisibleInstanceOnly, Category="Gameplay|Attack")
 	FVector AttackStartPosition;
@@ -230,7 +230,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* SpawnSound;
-
+	
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* JumpingSound;
 	
@@ -241,8 +241,14 @@ public:
 	class USoundCue* MeleeAttackSound;
 	
 	UPROPERTY(EditAnywhere, Category="Sounds")
-	class USoundCue* RushStartSound;
+	class USoundCue* RushTracingStartSound;
 
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* RushStartSound;
+	
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* RushingHitSound;
+	
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* NeutralizeSound;
 	
@@ -251,6 +257,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* NeutralizeSuccessSound;
+
+	UPROPERTY(EditAnywhere, Category="Sounds")
+	class USoundCue* RockThrowStartSound;
 	
 	UPROPERTY(EditAnywhere, Category="Sounds")
 	class USoundCue* RockThrowSound;

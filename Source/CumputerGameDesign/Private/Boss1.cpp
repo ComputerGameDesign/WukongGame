@@ -25,7 +25,7 @@ ABoss1::ABoss1()
 	Clone = ABoss1Clone::StaticClass();
 	
 	GetCapsuleComponent()->SetCapsuleHalfHeight(96.0f);
-	GetCapsuleComponent()->SetCapsuleRadius(40.0f);
+	GetCapsuleComponent()->SetCapsuleRadius(60.0f);
 	GetCapsuleComponent()->SetRelativeScale3D(FVector(1.75f, 1.75f, 1.75f));
 	
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(TEXT("/Script/Engine.SkeletalMesh'/Game/ParagonSunWukong/Characters/Heroes/Wukong/Meshes/Wukong.Wukong'"));
@@ -41,12 +41,15 @@ ABoss1::ABoss1()
 	WeaponCollider->SetCapsuleSize(5.0f, 120.0f);
 
 	SpawnSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster-roar-104049_Cue.monster-roar-104049_Cue'"));
+	RushTracingStartSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster-growl-94644_Cue.monster-growl-94644_Cue'"));
+	RushStartSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/swoosh-6-235279_Cue.swoosh-6-235279_Cue'"));
+	RushingHitSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/debris-break-253779_Cue.debris-break-253779_Cue'"));
 	JumpingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/jumpland_Cue.jumpland_Cue'"));
 	LandingSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/shake_Cue.shake_Cue'"));
 	MeleeAttackSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/swing_whoosh-weapon.swing_whoosh-weapon'"));
-	RushStartSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/monster-growl-94644_Cue.monster-growl-94644_Cue'"));
 	NeutralizeSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/magic-chargeup-102051_Cue.magic-chargeup-102051_Cue'"));
 	NeutralizeSuccessSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/glass-shatter-3-100155_Cue.glass-shatter-3-100155_Cue'"));
+	RockThrowStartSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/MonsterRoarsAndGrowls/cues/05_Chilling_Roar_Cue.05_Chilling_Roar_Cue'"));
 	RockThrowSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/near-miss-swing-whoosh-3-233426_Cue.near-miss-swing-whoosh-3-233426_Cue'"));
 	CloningSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Sounds/woosh-104586_Cue.woosh-104586_Cue'"));
 	DieSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/ParagonSunWukong/Audio/Cues/Wukong_Effort_Death.Wukong_Effort_Death'"));
@@ -333,10 +336,12 @@ void ABoss1::OnBodyHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UP
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), RushHitEffect, Hit.Location, FRotationMatrix::MakeFromX(Hit.Normal).Rotator());
 			if (OtherActor->ActorHasTag(FName("Wall")))
 			{
+				UGameplayStatics::PlaySoundAtLocation(this, RushingHitSound, GetActorLocation());
 				StartGroggy();
 			}
 			else if (OtherActor->ActorHasTag(FName("Player")))
 			{
+				UGameplayStatics::PlaySoundAtLocation(this, RushingHitSound, GetActorLocation());
 				TargetPlayer->TakeDamageToThis(RushDamage);
 				State = EBossState::Idle;
 			}

@@ -64,6 +64,21 @@ void ABoss1::PatternCloneLanding()
 {
 	if (!GetCharacterMovement()->IsFalling())
 	{
+		UGameplayStatics::PlaySoundAtLocation(this, LandingSound, GetActorLocation());
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),  // 현재 월드
+			LandingEffect,  // 사용할 파티클 시스템
+			GetActorLocation(),
+			FRotator(90, 0, 0),
+			FVector(5, 5, 5)
+		);
+		
+		auto Player = Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->Player;
+		if (!Player->GetCharacterMovement()->IsFalling())
+		{
+			Player->TakeDamageToThis(JumpDamage);
+		}
+		
 		State = EBossState::Casting;
 		GetWorldTimerManager().SetTimer(
 			PatternTimer,

@@ -164,8 +164,9 @@ void AMainCharacter::Move(const struct FInputActionValue &inputValue)
 
 void AMainCharacter::JumpThis(const struct FInputActionValue &inputValue)
 {
-	if (!IsDashing)
+	if (!IsDashing && !GetCharacterMovement()->IsFalling())
 	{
+		Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->JumpCount++;
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpSound, GetActorLocation());
 		Super::Jump();
 	}
@@ -175,6 +176,7 @@ void AMainCharacter::Dash(const struct FInputActionValue &inputValue)
 {
 	if (!IsDashing && !GetCharacterMovement()->IsFalling())
 	{
+		Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->RushCount++;
 		const FVector CharacterVelocity = GetVelocity();
 		const FVector DashDirection = FVector(CharacterVelocity.X, CharacterVelocity.Y, 0).GetSafeNormal();
 
@@ -221,6 +223,7 @@ void AMainCharacter::ShootOnce()
 	if (NowBulletCount > 0)
 	{
 		NowBulletCount--;
+		Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->ShootCount++;
 		
 		const FVector FirePos = GetMesh()->GetBoneLocation(FName("gun_pin"));
 
@@ -248,6 +251,7 @@ void AMainCharacter::ShootOnce()
 		
 		if (bHit && HitResult.GetActor()->ActorHasTag(TEXT("Boss")))
 		{
+			Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->HitCount++;
 			const FVector HitPos = HitResult.ImpactPoint;
 
 			Beam->SetBeamSourcePoint(0, FirePos, 0);
@@ -260,7 +264,6 @@ void AMainCharacter::ShootOnce()
 				HitPos,
 				FRotationMatrix::MakeFromX(HitPos - FirePos).Rotator()// 생성할 위치
 			);
-
 			
 			if (ABoss1* Boss = Cast<ABoss1>(HitResult.GetActor()))
 			{
@@ -274,6 +277,16 @@ void AMainCharacter::ShootOnce()
 		}
 		else
 		{
+			if (bHit)
+            {
+            	const FVector HitPos = HitResult.ImpactPoint;
+            	UGameplayStatics::SpawnEmitterAtLocation(
+            		GetWorld(),  // 현재 월드
+            		ShootHitEffect,  // 사용할 파티클 시스템
+            		HitPos,
+            		FRotationMatrix::MakeFromX(HitPos - FirePos).Rotator()// 생성할 위치
+            	);
+            }
 			const FVector EndPos = FirePos + CameraDir * 10000;
 
 			Beam->SetBeamSourcePoint(0, FirePos, 0);
@@ -333,12 +346,21 @@ void AMainCharacter::Reload(const struct FInputActionValue& inputValue)
 void AMainCharacter::Die()
 {
 	IsDie = true;
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DieSound, GetActorLocation());
+	
 	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 	{
 		PlayerController->SetIgnoreMoveInput(true);
 		PlayerController->SetIgnoreLookInput(true);
 	}
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DieSound, GetActorLocation());
+	
+	if (const auto Pc = Cast<APlayerController>(Controller))
+	{
+		if (const auto Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(Pc->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings();
+		}
+	}
 	
 	Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->PlayerDie();
 }

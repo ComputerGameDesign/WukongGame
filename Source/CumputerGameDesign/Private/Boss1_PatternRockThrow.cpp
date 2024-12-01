@@ -1,6 +1,7 @@
 ﻿#include "Boss1.h"
 
 #include "MainCharacter.h"
+#include "MainGameModeBase.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -46,6 +47,7 @@ void ABoss1::StartPatternRockThrow()
 	State = EBossState::Casting;
 	SetActorRotationSmooth(GetTargetDirectionWithoutZ().Rotation(), 20.0f);
 	CanPatternRockThrow = false;
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), RockThrowStartSound, GetActorLocation());
 	GetWorldTimerManager().SetTimer(
 		PatternTimer,
 		[&]() -> void
@@ -86,6 +88,21 @@ void ABoss1::PatternRockThrowLanding()
 {
 	if (!GetCharacterMovement()->IsFalling())
 	{
+		UGameplayStatics::PlaySoundAtLocation(this, LandingSound, GetActorLocation());
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),  // 현재 월드
+			LandingEffect,  // 사용할 파티클 시스템
+			GetActorLocation(),
+			FRotator(90, 0, 0),
+			FVector(5, 5, 5)
+		);
+		
+		auto Player = Cast<AMainGameModeBase>(GetWorld()->GetAuthGameMode())->Player;
+		if (!Player->GetCharacterMovement()->IsFalling())
+		{
+			Player->TakeDamageToThis(JumpDamage);
+		}
+		
 		State = EBossState::Casting;
 		GetWorldTimerManager().SetTimer(
 			PatternTimer,

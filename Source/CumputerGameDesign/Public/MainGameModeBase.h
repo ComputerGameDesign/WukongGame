@@ -39,11 +39,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bgm")
 	class USoundWave* Bgm2;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bgm")
+	class USoundWave* YouDiedSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Bgm")
+	class USoundWave* ClearSound;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI")
 	TSubclassOf<UUserWidget> FailWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="UI")
 	TSubclassOf<UUserWidget> SuccessWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Gameplay")
+	int32 HitCount = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Gameplay")
+	int32 ShootCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Gameplay")
+	int32 RushCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Gameplay")
+	int32 JumpCount = 0;
 	
 	UFUNCTION()
 	void PlayerDie();
@@ -60,8 +78,14 @@ public:
 	UFUNCTION()
 	void SetBgm2() const;
 
+	UFUNCTION()
+	void InitializeCounts();
+
 	UFUNCTION(BlueprintCallable)
 	FString GetClearTime() const;
+
+	UFUNCTION(BlueprintCallable)
+	FString GetHitRateString() const;
 
 private:
 	float StartTime;

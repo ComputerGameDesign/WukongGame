@@ -7,7 +7,7 @@
 
 void ABoss1::StartRushing()
 {
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), RushStartSound, GetActorLocation());
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), RushTracingStartSound, GetActorLocation());
 	SetCoolTime(CanRush, RushCoolTime);
 	State = EBossState::RushTracing;
 	GetWorldTimerManager().SetTimer(

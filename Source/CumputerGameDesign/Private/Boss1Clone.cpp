@@ -19,6 +19,7 @@ ABoss1Clone::ABoss1Clone()
 	
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
 	CapsuleComponent->SetCapsuleHalfHeight(96.0f);
+	CapsuleComponent->SetCapsuleRadius(60.0f);
 	CapsuleComponent->SetRelativeScale3D(FVector(1.75f, 1.75f, 1.75f));
 	CapsuleComponent->SetCollisionProfileName("Pawn");
 	RootComponent = CapsuleComponent;
